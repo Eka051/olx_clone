@@ -38,7 +38,7 @@ This app uses the following Firebase services:
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/your-username/olx_clone.git
+   git clone https://github.com/Eka051/olx_clone.git
    cd olx_clone
    
 2. **Configure Firebase with FlutterFire**
