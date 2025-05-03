@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Main theme class that provides access to all app styling elements
 class AppTheme {
@@ -9,6 +10,55 @@ class AppTheme {
   /// Get the AppTheme instance for the current context
   static AppTheme of(BuildContext context) {
     return AppTheme._(context);
+  }
+
+  static TextTheme createTextTheme(TextTheme base) {
+    TextStyle withWeight(TextStyle? style, FontWeight weight) {
+      return GoogleFonts.montserrat(textStyle: style, fontWeight: weight);
+    }
+
+    return GoogleFonts.montserratTextTheme(base).copyWith(
+      displayLarge: withWeight(base.displayLarge, FontWeight.normal),
+      displayMedium: withWeight(base.displayMedium, FontWeight.normal),
+      displaySmall: withWeight(base.displaySmall, FontWeight.normal),
+      headlineLarge: withWeight(base.headlineLarge, FontWeight.w800),
+      headlineMedium: withWeight(base.headlineMedium, FontWeight.w700),
+      headlineSmall: withWeight(base.headlineSmall, FontWeight.w600),
+      titleLarge: withWeight(base.titleLarge, FontWeight.w500),
+      titleMedium: withWeight(base.titleMedium, FontWeight.w600),
+      titleSmall: withWeight(base.titleSmall, FontWeight.w500),
+      bodyLarge: withWeight(base.bodyLarge, FontWeight.normal),
+      bodyMedium: withWeight(base.bodyMedium, FontWeight.normal),
+      bodySmall: withWeight(base.bodySmall, FontWeight.normal),
+      labelLarge: withWeight(base.labelLarge, FontWeight.w500),
+      labelMedium: withWeight(base.labelMedium, FontWeight.w500),
+      labelSmall: withWeight(base.labelSmall, FontWeight.w500),
+    );
+  }
+
+  static ThemeData createThemeData(BuildContext context) {
+    final base = Theme.of(context).textTheme;
+    final textTheme = createTextTheme(base);
+
+    return ThemeData(
+      useMaterial3: true,
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
+      fontFamily: GoogleFonts.montserrat().fontFamily,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF003034),
+        brightness: Brightness.light,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        titleTextStyle: textTheme.headlineLarge,
+      ),
+      // Apply font to other components
+      buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
+      iconTheme: const IconThemeData(color: Color(0xFF003034)),
+    );
   }
 
   /// Whether the current theme is in dark mode

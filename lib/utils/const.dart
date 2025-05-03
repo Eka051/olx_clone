@@ -1,7 +1,8 @@
 /// Asset Paths
 class AppAssets {
-  static const String logoPath = 'assets/images/logo.png';
-  static const String placeholderImagePath = 'assets/images/placeholder.png';
+  static const String astraLogo = 'assets/images/LOGO-MEMBER-ASTRA.png';
+  static const String darkLogo = 'assets/images/OLX-LOGO-DARK.png';
+  static const String lightLogo = 'assets/images/OLX-LOGO-WHITE.png';
 }
 
 /// String Constants
@@ -21,6 +22,7 @@ class AppStrings {
 class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String authOption = '/auth-option';
   static const String register = '/register';
   static const String home = '/home';
   static const String productDetails = '/product-details';
