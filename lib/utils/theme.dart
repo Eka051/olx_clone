@@ -34,22 +34,17 @@ class AppTheme {
 }
 
 final _lightColors = AppColors(
-  primary: const Color(0xFF3498DB),
+  primary: const Color(0xFF003034),
   secondary: const Color(0xFF2ECC71),
-  background: const Color(
-    0xFFF5F5F5,
-  ),
+  background: const Color(0xFFF5F5F5),
   surface: Colors.white,
   error: const Color(0xFFE74C3C),
   onPrimary: Colors.white,
   onSecondary: Colors.black,
-  onBackground: const Color(
-    0xFF2C3E50,
-  ),
-  onSurface: const Color(
-    0xFF2C3E50,
-  ),
+  onBackground: const Color(0xFF2C3E50),
+  onSurface: const Color(0xFF2C3E50),
   onError: Colors.white,
+  splash: const Color(0xFF3977FE),
 );
 
 final _darkColors = AppColors(
@@ -63,6 +58,7 @@ final _darkColors = AppColors(
   onBackground: Colors.white,
   onSurface: Colors.white,
   onError: Colors.black,
+  splash: const Color(0xFF3977FE),
 );
 
 /// Color palette for the application
@@ -77,6 +73,7 @@ class AppColors {
   final Color onBackground;
   final Color onSurface;
   final Color onError;
+  final Color splash;
 
   final Color grey = const Color(0xFF9E9E9E);
   final Color lightGrey = const Color(0xFFE0E0E0);
@@ -101,6 +98,7 @@ class AppColors {
     required this.onBackground,
     required this.onSurface,
     required this.onError,
+    required this.splash,
   });
 }
 
