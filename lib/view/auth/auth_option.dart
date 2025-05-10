@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:olx_clone/utils/const.dart';
 import 'package:olx_clone/utils/theme.dart';
+import 'package:olx_clone/view/auth/login_phone.dart';
+import 'package:olx_clone/view/splashscreen/splashscreen_view.dart';
 import 'package:olx_clone/widgets/app_filled_button.dart';
 
 class AuthOption extends StatelessWidget {
@@ -37,7 +39,12 @@ class AuthOption extends StatelessWidget {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SplashscreenView()),
+                            );
+                          },
                           child: Row(
                             children: [
                               Icon(
@@ -73,7 +80,12 @@ class AuthOption extends StatelessWidget {
                         spacing: 10,
                         children: [
                           AppFilledButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginPhone()),
+                              );
+                            },
                             text: 'Login/Daftar dengan Telepon',
                             icon: Icons.phone_android_rounded,
                             widthButton: 350,
