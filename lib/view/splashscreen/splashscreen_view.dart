@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,7 @@ class _SplashscreenViewState extends State<SplashscreenView> {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     return Scaffold(
       body: Center(
         child: Container(
@@ -47,12 +49,13 @@ class _SplashscreenViewState extends State<SplashscreenView> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(),
+              const SizedBox(height: 20),
               Image.asset(
                 'assets/images/LOGO-MEMBER-ASTRA.png',
                 width: 150,
                 height: 150,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.only(bottom: 100),

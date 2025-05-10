@@ -12,6 +12,7 @@ class AppFilledButton extends StatelessWidget {
     this.textColor,
     this.fontSize,
     this.widthButton,
+    this.isTextCentered = false,
   });
   final VoidCallback? onPressed;
   final String text;
@@ -21,7 +22,7 @@ class AppFilledButton extends StatelessWidget {
   final Color? textColor;
   final int? fontSize;
   final double? widthButton;
-
+  final bool isTextCentered;
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -31,12 +32,13 @@ class AppFilledButton extends StatelessWidget {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color ?? AppTheme.of(context).colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment:
+              isTextCentered
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
           children: [
             if (icon != null)
               Icon(
