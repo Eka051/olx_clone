@@ -35,9 +35,11 @@ class AuthProvider with ChangeNotifier {
     try {
       user = _firebaseAuth.currentUser;
       _isLoggedIn = user != null;
-      final prefs = await SharedPreferences.getInstance();
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+      if (!isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      }
     } catch (e) {
       errorMessage = e.toString();
       _isLoggedIn = false;
@@ -103,18 +105,16 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(email: email, password: password);
       user = userCredential.user;
       _isLoggedIn = user != null;
-      
+
       if (_isLoggedIn) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
       }
-      
+
       return _isLoggedIn;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
@@ -125,6 +125,81 @@ class AuthProvider with ChangeNotifier {
         errorMessage = e.message;
       }
       return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> loginWithEmailPassword(String email, String password) async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth
+          .signInWithEmailAndPassword(email: email, password: password);
+      user = userCredential.user;
+      _isLoggedIn = user != null;
+
+      if (_isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+      }
+
+      return _isLoggedIn;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Wrong password provided for that user.';
+      } else {
+        errorMessage = e.message;
+      }
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      user = userCredential.user;
+      _isLoggedIn = user != null;
+
+      if (_isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+      }
+
+      return _isLoggedIn;
     } catch (e) {
       errorMessage = e.toString();
       return false;
