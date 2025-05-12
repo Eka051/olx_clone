@@ -16,6 +16,7 @@ class _SplashscreenViewState extends State<SplashscreenView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).unfocus();
       _initializeApp();
     });
   }
@@ -39,36 +40,41 @@ class _SplashscreenViewState extends State<SplashscreenView> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-    return Scaffold(
-      body: Center(
-        child: Container(
-          width: double.infinity,
-          color: AppTheme.of(context).colors.splash,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              const SizedBox(height: 20),
-              Image.asset(
-                'assets/images/LOGO-MEMBER-ASTRA.png',
-                width: 150,
-                height: 150,
-              ),
-              const SizedBox(height: 10),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 100),
-                child: Text(
-                  '#PusatnyaNgeDeal',
-                  style: AppTheme.of(context).textStyle.bodyLarge.copyWith(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        body: Center(
+          child: Container(
+            width: double.infinity,
+            color: AppTheme.of(context).colors.splash,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Spacer(),
+                const SizedBox(height: 20),
+                Image.asset(
+                  'assets/images/LOGO-MEMBER-ASTRA.png',
+                  width: 150,
+                  height: 150,
+                ),
+                const SizedBox(height: 10),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  child: Text(
+                    '#PusatnyaNgeDeal',
+                    style: AppTheme.of(context).textStyle.bodyLarge.copyWith(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
