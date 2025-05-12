@@ -9,7 +9,7 @@ Ideal for learning, prototyping, or expanding into a production-level marketplac
 
 ## 🚀 Features
 
-- Clean and scalable Flutter architecture
+- MVC Pattern architecture
 - Named route navigation
 - State management with `Provider`
 - Firebase Authentication & Firestore
