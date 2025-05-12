@@ -7,7 +7,9 @@ import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/view/auth/auth_option.dart';
 import 'package:olx_clone/view/auth/input_otp.dart';
 import 'package:olx_clone/view/auth/login.dart';
+import 'package:olx_clone/view/auth/login_email.dart';
 import 'package:olx_clone/view/auth/login_phone.dart';
+import 'package:olx_clone/view/home/home_view.dart';
 import 'package:olx_clone/view/splashscreen/splashscreen_view.dart';
 import 'package:provider/provider.dart';
 
@@ -38,9 +40,22 @@ class OlxClone extends StatelessWidget {
         AppRoutes.login: (_) => const LoginView(),
         AppRoutes.authOption: (_) => const AuthOption(),
         AppRoutes.loginPhone: (_) => const LoginPhone(),
-        AppRoutes.inputOtp: (_) => const InputOtp(),
+        AppRoutes.loginEmail: (_) => const LoginEmail(),
+        AppRoutes.home: (_) => const HomeView(),
       },
       initialRoute: AppRoutes.splash,
+      onGenerateRoute: (RouteSettings settings) {
+        if (settings.name == AppRoutes.inputOtp) {
+          final args = settings.arguments as Map<String, dynamic>?;
+          return MaterialPageRoute(
+            builder:
+                (context) => InputOtp(
+                  phoneNumber: args?['phoneNumber'] ?? '',
+                  verificationId: args?['verificationId'] ?? '',
+                ),
+          );
+        }
+      },
     );
   }
 }

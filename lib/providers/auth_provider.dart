@@ -8,12 +8,19 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = true;
   String? errorMessage;
   User? user;
+  bool _isPhoneValid = false;
+  bool _isEmailValid = false;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final TextEditingController phoneNumberController = TextEditingController();
+  final TextEditingController otpController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
+  bool get isPhoneValid => _isPhoneValid;
+  bool get isEmailValid => _isEmailValid;
 
   AuthProvider() {
     _firebaseAuth.authStateChanges().listen((User? user) {
@@ -25,6 +32,80 @@ class AuthProvider with ChangeNotifier {
       }
       notifyListeners();
     });
+
+    phoneNumberController.addListener(_validatePhoneNumber);
+  }
+
+  void _validatePhoneNumber() {
+    final text = phoneNumberController.text;
+    final isValid =
+        text.length >= 10 &&
+        !text.startsWith('0') &&
+        RegExp(r'^[1-9]\d*$').hasMatch(text);
+    if (isValid != _isPhoneValid) {
+      _isPhoneValid = isValid;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    phoneNumberController.removeListener(_validatePhoneNumber);
+    phoneNumberController.dispose();
+    otpController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  bool validatePhoneNumber(String phoneNumber) {
+    errorMessage = null;
+
+    if (phoneNumber.isEmpty) {
+      errorMessage = 'Nomor telepon tidak boleh kosong';
+      return false;
+    }
+    if (phoneNumber.length < 10) {
+      errorMessage = 'Nomor telepon kurang dari 10 digit';
+      return false;
+    }
+    if (!RegExp(r'^[1-9]\d*$').hasMatch(phoneNumber)) {
+      errorMessage = 'Format tidak valid';
+      return false;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  bool validateOTP(String otp) {
+    errorMessage = null;
+
+    if (otp.isEmpty) {
+      errorMessage = 'Kode OTP tidak boleh kosong';
+      return false;
+    }
+    if (otp.length < 6) {
+      errorMessage = 'Kode OTP kurang dari 6 digit';
+      return false;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  bool validateEmail(String email) {
+    errorMessage = null;
+
+    if (email.isEmpty) {
+      errorMessage = 'Email tidak boleh kosong';
+      return false;
+    }
+    if (!RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(email)) {
+      errorMessage = 'Format email tidak valid';
+      return false;
+    }
+    notifyListeners();
+    return true;
   }
 
   Future<void> getLoginStatus() async {
@@ -99,26 +180,28 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> signUpWithEmailPassword(String email, String password) async {
+  Future<bool> signUpWithEmail(String email) async {
     _isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      UserCredential userCredential = await _firebaseAuth
-          .createUserWithEmailAndPassword(email: email, password: password);
-      user = userCredential.user;
-      _isLoggedIn = user != null;
+      await _firebaseAuth.sendSignInLinkToEmail(
+        email: email,
+        actionCodeSettings: ActionCodeSettings(
+          url: 'https://your-app-url.com',
+          handleCodeInApp: true,
+          androidPackageName: 'com.example.olx_clone',
+          androidInstallApp: true,
+          androidMinimumVersion: '21',
+        ),
+      );
 
-      if (_isLoggedIn) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-      }
-
-      return _isLoggedIn;
+      errorMessage = 'Verification email sent. Please check your inbox.';
+      return true;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        errorMessage = 'The password provided is too weak.';
+      if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is not valid.';
       } else if (e.code == 'email-already-in-use') {
         errorMessage = 'The account already exists for that email.';
       } else {
@@ -134,32 +217,20 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithEmailPassword(String email, String password) async {
+  Future<bool> verifyCodeEmail(String email, String code) async {
     _isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      UserCredential userCredential = await _firebaseAuth
-          .signInWithEmailAndPassword(email: email, password: password);
-      user = userCredential.user;
-      _isLoggedIn = user != null;
+      final AuthCredential credential = EmailAuthProvider.credential(
+        email: email,
+        password: code,
+      );
 
-      if (_isLoggedIn) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-      }
-
-      return _isLoggedIn;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Wrong password provided for that user.';
-      } else {
-        errorMessage = e.message;
-      }
-      return false;
+      await _firebaseAuth.signInWithCredential(credential);
+      _isLoggedIn = true;
+      return true;
     } catch (e) {
       errorMessage = e.toString();
       return false;
@@ -169,12 +240,14 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
+      await _googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return false;
@@ -209,11 +282,40 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithCredential(PhoneAuthCredential credential) async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      user = userCredential.user;
+      _isLoggedIn = user != null;
+
+      if (_isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+      }
+
+      return _isLoggedIn;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      await _googleSignIn.signOut();
+      await _firebaseAuth.signOut();
       await Future.delayed(const Duration(milliseconds: 500));
       _isLoggedIn = false;
 

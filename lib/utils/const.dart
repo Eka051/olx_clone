@@ -26,7 +26,6 @@ class AppRoutes {
   static const String loginPhone = '/login-phone';
   static const String loginEmail = '/login-email';
   static const String inputOtp = '/input-otp';
-  static const String register = '/register';
   static const String home = '/home';
   static const String productDetails = '/product-details';
   static const String addListing = '/add-listing';
