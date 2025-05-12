@@ -199,7 +199,9 @@ class _LoginPhoneState extends State<LoginPhone> {
                               barrierDismissible: false,
                               builder: (BuildContext context) {
                                 return const Center(
-                                  child: CircularProgressIndicator(),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
                                 );
                               },
                             );
@@ -215,23 +217,16 @@ class _LoginPhoneState extends State<LoginPhone> {
                                 if (success && mounted) {
                                   Navigator.pushReplacementNamed(
                                     context,
-                                    '/home',
+                                    '/input-otp',
                                   );
                                 }
                               },
-                              (FirebaseAuthException e) {
+                                (FirebaseAuthException e) {
                                 if (mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Verifikasi gagal: ${e.message}',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  debugPrint('Error PHONE: ${e.message ?? 'Terjadi kesalahan'}');
                                 }
-                              }, // codeSent
+                                }, // codeSent
                               (String verificationId, int? resendToken) {
                                 if (mounted) {
                                   Navigator.pop(context); // Dismiss loading

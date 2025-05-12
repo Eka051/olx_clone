@@ -151,13 +151,17 @@ class AuthProvider with ChangeNotifier {
       );
     } catch (e) {
       errorMessage = e.toString();
+      debugPrint('Error verifying phone number: $errorMessage');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> verifyOTP(String verificationId, String smsCode) async {
+  Future<bool> verifyOTP(
+    String verificationId, {
+    required String smsCode,
+  }) async {
     _isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -168,8 +172,61 @@ class AuthProvider with ChangeNotifier {
         smsCode: smsCode,
       );
 
-      await _firebaseAuth.signInWithCredential(credential);
-      _isLoggedIn = true;
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      user = userCredential.user;
+      _isLoggedIn = user != null;
+
+      if (_isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+      }
+
+      return _isLoggedIn;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-verification-code') {
+        errorMessage = 'Kode OTP tidak valid. Silakan coba lagi.';
+      } else if (e.code == 'invalid-verification-id') {
+        errorMessage =
+            'Sesi verifikasi telah berakhir. Silakan kirim ulang kode.';
+      } else {
+        errorMessage = 'Verifikasi gagal: ${e.message}';
+      }
+      return false;
+    } catch (e) {
+      errorMessage = 'Terjadi kesalahan: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resendOTP(String formattedPhoneNumber) async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      // This function now expects the phone number to be already formatted with +62
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber:
+            formattedPhoneNumber, // Use the formatted phone number directly
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          errorMessage = e.message;
+        },
+        codeSent: (String newVerificationId, int? resendToken) {
+          // Success - just need to return true
+        },
+        codeAutoRetrievalTimeout: (String newVerificationId) {
+          // Timeout handling
+        },
+        timeout: const Duration(seconds: 60),
+      );
       return true;
     } catch (e) {
       errorMessage = e.toString();
@@ -239,7 +296,6 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
@@ -325,5 +381,19 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> handleOTPVerification(
+    String verificationId,
+    String smsCode,
+    BuildContext context,
+  ) async {
+    final success = await verifyOTP(verificationId, smsCode: smsCode);
+
+    if (success) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    }
+
+    return success;
   }
 }
