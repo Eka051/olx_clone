@@ -25,12 +25,7 @@ class _LoginViewState extends State<LoginView> {
             const SizedBox(height: 20),
             const Text('Login Page'),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Implement login functionality here
-              },
-              child: const Text('Login'),
-            ),
+            ElevatedButton(onPressed: () {}, child: const Text('Login')),
           ],
         ),
       ),
