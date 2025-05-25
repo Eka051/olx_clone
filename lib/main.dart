@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:olx_clone/firebase_options.dart';
@@ -16,9 +17,16 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity,
+    appleProvider: AppleProvider.appAttest,
+    webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+  );
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (context) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthProviderApp()),
+      ],
       child: const OlxClone(),
     ),
   );
@@ -44,17 +52,31 @@ class OlxClone extends StatelessWidget {
         AppRoutes.home: (_) => const HomeView(),
       },
       initialRoute: AppRoutes.splash,
-      onGenerateRoute: (RouteSettings settings) {
-        if (settings.name == AppRoutes.inputOtp) {
-          final args = settings.arguments as Map<String, dynamic>?;
-          return MaterialPageRoute(
-            builder:
-                (context) => InputOtp(
-                  phoneNumber: args?['phoneNumber'] ?? '',
-                  verificationId: args?['verificationId'] ?? '',
-                ),
-          );
+      onGenerateRoute: (settings) {
+        if (settings.name == '/input-otp') {
+          final args = settings.arguments as Map<String, dynamic>;
+
+          if (args['type'] == 'phone') {
+            return MaterialPageRoute(
+              builder:
+                  (context) => InputOtp(
+                    phoneNumber: args['phoneNumber'],
+                    verificationId: args['verificationId'],
+                    type: 'phone',
+                  ),
+            );
+          } else if (args['type'] == 'email') {
+            return MaterialPageRoute(
+              builder:
+                  (context) => InputOtp(
+                    email: args['email'],
+                    verificationId: args['verificationId'],
+                    type: 'email',
+                  ),
+            );
+          }
         }
+        return null;
       },
     );
   }

@@ -1,13 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/widgets/app_filled_button.dart';
 import 'package:provider/provider.dart';
-import 'package:olx_clone/providers/auth_provider.dart' as app;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:olx_clone/utils/const.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
 
 class LoginEmail extends StatefulWidget {
   const LoginEmail({super.key});
@@ -19,7 +15,7 @@ class LoginEmail extends StatefulWidget {
 class _LoginEmailState extends State<LoginEmail> {
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<app.AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviderApp>(context);
     final primaryColor = AppTheme.of(context).colors.primary;
 
     return GestureDetector(
@@ -121,23 +117,40 @@ class _LoginEmailState extends State<LoginEmail> {
               ),
               const Spacer(),
               AppFilledButton(
-                onPressed: () {
-                  authProvider.isEmailValid
-                      ? () async {
-                        await authProvider.signUpWithEmail(
-                          authProvider.emailController.text,
-                        );
-                        if (authProvider.isEmailValid) {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/login-phone',
+                onPressed:
+                    authProvider.isEmailValid
+                        ? () async {
+                          final success = await authProvider.signUpWithEmail(
+                            authProvider.emailController.text,
                           );
+                          if (success && mounted) {
+                            Navigator.pushNamed(
+                              context,
+                              '/input-otp',
+                              arguments: {
+                                'email': authProvider.emailController.text,
+                                'type': 'email',
+                              },
+                            );
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  authProvider.errorMessage ??
+                                      'Gagal mengirim OTP',
+                                  style: AppTheme.of(context)
+                                      .textStyle
+                                      .bodyMedium
+                                      .copyWith(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
-                      }
-                      : null;
-                },
+                        : null,
                 text: 'Lanjut',
-                color: authProvider.isPhoneValid ? primaryColor : Colors.grey,
+                color: authProvider.isEmailValid ? primaryColor : Colors.grey,
                 textColor: Colors.white,
                 fontSize: 16,
                 widthButton: double.infinity,
