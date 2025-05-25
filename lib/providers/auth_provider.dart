@@ -96,6 +96,7 @@ class AuthProviderApp with ChangeNotifier {
   Future<void> getLoginStatus() async {
     _isLoading = true;
     errorMessage = null;
+    successMessage = null;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -220,7 +221,7 @@ class AuthProviderApp with ChangeNotifier {
 
   Future<void> handleResendOtp(BuildContext context) async {
     if (_currentOtpType == 'phone' && _currentPhoneNumber != null) {
-      await verifyPhoneNumberWithDialog(context, _currentPhoneNumber!, '/otp_phone_screen_route');
+      await verifyPhoneNumberWithDialog(context, _currentPhoneNumber!, '/otp_phone_screen_route'); // Ganti dengan nama route yang benar
     } else if (_currentOtpType == 'email' && _currentEmail != null) {
       bool sent = await signUpWithEmail(_currentEmail!);
       if (sent && context.mounted) {
@@ -304,17 +305,48 @@ class AuthProviderApp with ChangeNotifier {
     notifyListeners();
     try {
       final response = await http.post(url, headers: headers, body: body);
-      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+      
+      if (response.body.isEmpty) {
+        errorMessage = 'Respons backend kosong saat mengirim token Firebase.';
+        successMessage = null;
+        return false;
+      }
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(response.body);
+      } catch (e) {
+        errorMessage = 'Gagal memproses JSON dari backend: ${e.toString()}';
+        successMessage = null;
+        return false;
+      }
+
+      if (decodedJson is! Map<String, dynamic>) {
+        errorMessage = 'Format respons backend tidak valid (bukan JSON Map).';
+        successMessage = null;
+        return false;
+      }
+      final Map<String, dynamic> responseData = decodedJson;
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-        await _saveBackendToken(responseData['token'] as String);
-        return true;
+        if (responseData['token'] != null && responseData['token'] is String) {
+            await _saveBackendToken(responseData['token'] as String);
+            successMessage = responseData['message'] as String? ?? 'Login Firebase ke backend berhasil.';
+            errorMessage = null;
+            return true;
+        } else {
+            errorMessage = 'Token tidak ditemukan dalam respons backend.';
+            successMessage = null;
+            return false;
+        }
       } else {
         errorMessage = responseData['message'] as String? ?? 'Gagal login ke backend.';
+        successMessage = null;
         return false;
       }
     } catch (e) {
       errorMessage = 'Error komunikasi backend: ${e.toString()}';
+      successMessage = null;
       return false;
     } finally {
         _isLoading = false;
@@ -325,6 +357,7 @@ class AuthProviderApp with ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
     errorMessage = null;
+    successMessage = null;
     notifyListeners();
     try {
       await _googleSignIn.signOut();
@@ -373,6 +406,7 @@ class AuthProviderApp with ChangeNotifier {
   ) async {
     _isLoading = true;
     errorMessage = null;
+    successMessage = null;
     notifyListeners();
 
     String formattedPhoneNumber = rawPhoneNumber;
@@ -425,21 +459,38 @@ class AuthProviderApp with ChangeNotifier {
     final body = jsonEncode({'email': email});
     try {
       final response = await http.post(url, headers: headers, body: body);
-      Map<String, dynamic>? responseData;
-      try {
-        responseData = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (e) {
-        errorMessage = 'Gagal memproses respons: ${e.toString()}';
+      
+      if (response.body.isEmpty) {
+        errorMessage = 'Respons backend kosong saat meminta OTP.';
+        successMessage = null;
         return false;
       }
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(response.body);
+      } catch (e) {
+        errorMessage = 'Gagal memproses JSON dari backend: ${e.toString()}';
+        successMessage = null;
+        return false;
+      }
+      
+      if (decodedJson is! Map<String, dynamic>) {
+        errorMessage = 'Format respons backend tidak valid (bukan JSON Map).';
+        successMessage = null;
+        return false;
+      }
+      final Map<String, dynamic> responseData = decodedJson;
 
       if (response.statusCode == 201) {
         if (responseData['success'] != null && responseData['success'] is bool && responseData['success'] == true) {
           successMessage = responseData['message'] as String? ?? 'Kode OTP berhasil dikirim.';
+          errorMessage = null;
           _currentEmail = email;
           return true;
         } else {
           errorMessage = responseData['message'] as String? ?? 'Gagal meminta OTP (respons server tidak menandakan sukses).';
+          successMessage = null; 
           return false;
         }
       } else {
@@ -452,10 +503,12 @@ class AuthProviderApp with ChangeNotifier {
             serverErrorMessage = 'Gagal meminta OTP (status: ${response.statusCode}).';
         }
         errorMessage = serverErrorMessage;
+        successMessage = null; 
         return false;
       }
     } catch (e) {
       errorMessage = 'Gagal mengirim permintaan: ${e.toString()}';
+      successMessage = null;
       return false;
     } finally {
       _isLoading = false;
@@ -466,22 +519,55 @@ class AuthProviderApp with ChangeNotifier {
   Future<bool> verifyCodeEmail(String email, String code) async {
     _isLoading = true;
     errorMessage = null;
+    successMessage = null;
     notifyListeners();
     final url = Uri.parse('$_backendUrl/api/auth/email-verifications');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'email': email, 'otp': code});
     try {
       final response = await http.post(url, headers: headers, body: body);
-      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.body.isEmpty) {
+        errorMessage = 'Respons backend kosong saat verifikasi OTP.';
+        successMessage = null;
+        return false;
+      }
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(response.body);
+      } catch (e) {
+        errorMessage = 'Gagal memproses JSON dari backend: ${e.toString()}';
+        successMessage = null;
+        return false;
+      }
+
+      if (decodedJson is! Map<String, dynamic>) {
+        errorMessage = 'Format respons backend tidak valid (bukan JSON Map).';
+        successMessage = null;
+        return false;
+      }
+      final Map<String, dynamic> responseData = decodedJson;
+
       if (response.statusCode == 200 && responseData['success'] == true) {
-        await _saveBackendToken(responseData['token'] as String);
-        return true;
+         if (responseData['token'] != null && responseData['token'] is String) {
+            await _saveBackendToken(responseData['token'] as String);
+            successMessage = responseData['message'] as String? ?? 'Verifikasi OTP berhasil.';
+            errorMessage = null;
+            return true;
+        } else {
+            errorMessage = 'Token tidak ditemukan dalam respons backend.';
+            successMessage = null; 
+            return false;
+        }
       } else {
         errorMessage = responseData['message'] as String? ?? 'Gagal verifikasi OTP.';
+        successMessage = null;
         return false;
       }
     } catch (e) {
       errorMessage = 'Error komunikasi backend: ${e.toString()}';
+      successMessage = null; 
       return false;
     } finally {
       _isLoading = false;
@@ -496,6 +582,8 @@ class AuthProviderApp with ChangeNotifier {
       await _googleSignIn.signOut();
       await _firebaseAuth.signOut();
       await _clearBackendToken();
+      successMessage = null;
+      errorMessage = null;
     } catch(e) {
         errorMessage = "Gagal logout: ${e.toString()}";
     } finally {
@@ -513,6 +601,9 @@ class AuthProviderApp with ChangeNotifier {
         _showSnackBar(context, errorMessage ?? "Nomor telepon tidak valid", Colors.red);
         return;
     }
+    
+    _isLoading = true;
+    notifyListeners();
 
     showDialog(
       context: context,

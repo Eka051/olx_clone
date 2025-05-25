@@ -120,10 +120,35 @@ class _LoginEmailState extends State<LoginEmail> {
                 onPressed:
                     authProvider.isEmailValid
                         ? () async {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                          );
+
                           final success = await authProvider.signUpWithEmail(
                             authProvider.emailController.text,
                           );
+
                           if (success && mounted) {
+                            Navigator.pop(context);
+                          }
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'OTP telah dikirim ke email Anda',
+                                  style: AppTheme.of(context)
+                                      .textStyle
+                                      .bodyMedium
+                                      .copyWith(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                             Navigator.pushNamed(
                               context,
                               '/input-otp',
