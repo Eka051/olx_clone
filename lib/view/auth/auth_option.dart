@@ -19,7 +19,7 @@ class AuthOption extends StatefulWidget {
 class _AuthOptionState extends State<AuthOption> {
   @override
   Widget build(BuildContext context) {
-    final authProdiver = Provider.of<AuthProvider>(context, listen: false);
+    final authProdiver = Provider.of<AuthProviderApp>(context, listen: false);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(statusBarIconBrightness: Brightness.light),
       child: GestureDetector(

@@ -26,13 +26,18 @@ class AppRoutes {
   static const String loginPhone = '/login-phone';
   static const String loginEmail = '/login-email';
   static const String inputOtp = '/input-otp';
+
   static const String home = '/home';
-  static const String productDetails = '/product-details';
+  static const String chat = '/chat';
+  static const String sell = '/sell';
+  static const String myAds = '/my-ads';
+  static const String myAccount = '/my-account';
+
   static const String addListing = '/add-listing';
-  static const String profile = '/profile';
+  static const String productDetails = '/product-details';
+  static const String settings = '/settings';
 }
 
-/// Standard Dimensions (for direct access without context)
 class AppDimensions {
   // Padding & Margin
   static const double paddingS = 8.0;

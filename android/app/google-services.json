@@ -12,7 +12,20 @@
           "package_name": "com.example.olx_clone"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "64799472887-bblrne91bfg91plhvjhk2lsrlacidn5g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.olx_clone",
+            "certificate_hash": "7d15a8609e1da3870fc668e223938a09042c74c4"
+          }
+        },
+        {
+          "client_id": "64799472887-jqpqfqgapv4o27aivmjvvrqbpunqjs05.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD2JSIrtyAGj0M23XdALk9K6KTTbfFXilE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "64799472887-jqpqfqgapv4o27aivmjvvrqbpunqjs05.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
