@@ -3,8 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/widgets/app_filled_button.dart';
 import 'package:provider/provider.dart';
-import 'package:olx_clone/providers/auth_provider.dart' as app;
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/utils/const.dart';
 
 class LoginPhone extends StatefulWidget {
@@ -17,7 +16,7 @@ class LoginPhone extends StatefulWidget {
 class _LoginPhoneState extends State<LoginPhone> {
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<app.AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviderApp>(context);
     final primaryColor = AppTheme.of(context).colors.primary;
 
     return GestureDetector(
@@ -191,60 +190,10 @@ class _LoginPhoneState extends State<LoginPhone> {
                   onPressed:
                       authProvider.isPhoneValid
                           ? () async {
-                            final phoneNumber =
-                                '+62${authProvider.phoneNumberController.text}';
-
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (BuildContext context) {
-                                return const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
-                                );
-                              },
-                            );
-
-                            await authProvider.verifyPhoneNumber(
-                              phoneNumber,
-                              (PhoneAuthCredential credential) async {
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                }
-                                final success = await authProvider
-                                    .signInWithCredential(credential);
-                                if (success && mounted) {
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/input-otp',
-                                  );
-                                }
-                              },
-                                (FirebaseAuthException e) {
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  debugPrint('Error PHONE: ${e.message ?? 'Terjadi kesalahan'}');
-                                }
-                                }, // codeSent
-                              (String verificationId, int? resendToken) {
-                                if (mounted) {
-                                  Navigator.pop(context); // Dismiss loading
-                                  // Navigate using named route with arguments
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.inputOtp,
-                                    arguments: {
-                                      'phoneNumber': phoneNumber,
-                                      'verificationId': verificationId,
-                                    },
-                                  );
-                                }
-                              },
-                              // codeAutoRetrievalTimeout
-                              (String verificationId) {
-                                // Handle timeout if needed
-                              },
+                            await authProvider.verifyPhoneNumberWithDialog(
+                              context,
+                              authProvider.phoneNumberController.text,
+                              AppRoutes.inputOtp
                             );
                           }
                           : null,

@@ -22,7 +22,7 @@ class _SplashscreenViewState extends State<SplashscreenView> {
   }
 
   Future<void> _initializeApp() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
 
     await authProvider.getLoginStatus();
 

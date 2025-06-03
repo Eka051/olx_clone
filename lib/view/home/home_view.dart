@@ -13,7 +13,7 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviderApp>(context);
     return Scaffold(
       backgroundColor: AppTheme.of(context).colors.secondary,
       appBar: AppBar(
