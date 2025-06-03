@@ -221,7 +221,7 @@ class AuthProviderApp with ChangeNotifier {
 
   Future<void> handleResendOtp(BuildContext context) async {
     if (_currentOtpType == 'phone' && _currentPhoneNumber != null) {
-      await verifyPhoneNumberWithDialog(context, _currentPhoneNumber!, '/otp_phone_screen_route'); // Ganti dengan nama route yang benar
+      await verifyPhoneNumberWithDialog(context, _currentPhoneNumber!, '/otp_phone_screen_route');
     } else if (_currentOtpType == 'email' && _currentEmail != null) {
       bool sent = await signUpWithEmail(_currentEmail!);
       if (sent && context.mounted) {
