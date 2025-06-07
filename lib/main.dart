@@ -14,12 +14,13 @@ import 'package:olx_clone/view/home/home_view.dart';
 import 'package:olx_clone/view/splashscreen/splashscreen_view.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/view/home/navbar.dart';
+
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
 //   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 //   await FirebaseAppCheck.instance.activate(
 //     androidProvider: AndroidProvider.playIntegrity,
-//     appleProvider: AppleProvider.appAttest,
+//     appleProvider: AppleProvider.apppAttest,
 //     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
 //   );
 //   runApp(
@@ -90,7 +91,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EHO : Event Horeg Application',
+      title: 'OLX Clone',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Arial',

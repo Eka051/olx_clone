@@ -4,6 +4,7 @@ import 'package:olx_clone/view/package/package_cart_screen.dart';
 import 'package:olx_clone/view/profile/profile_page.dart';
 import 'package:olx_clone/view/sell/sell_screen.dart';
 import 'package:olx_clone/view/notification/notification_page.dart';
+import 'package:olx_clone/utils/theme.dart';
 
 class Navbar extends StatefulWidget {
   const Navbar({super.key});
@@ -35,6 +36,40 @@ class _NavbarState extends State<Navbar> {
     );
   }
 
+  Widget _buildBottomAppBarItem({
+    required IconData iconData,
+    required String label,
+    required int index,
+    bool isSelected = false,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                iconData,
+                color: isSelected ? AppTheme.of(context).primary : Colors.grey,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isSelected ? AppTheme.of(context).primary : Colors.grey,
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,24 +78,31 @@ class _NavbarState extends State<Navbar> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              icon: const Icon(Icons.home),
-              onPressed: () => _onItemTapped(0),
+            _buildBottomAppBarItem(
+              iconData: Icons.home,
+              label: 'Beranda',
+              index: 0,
+              isSelected: _currentIndex == 0,
             ),
-            IconButton(
-              icon: const Icon(Icons.shopping_bag),
-              onPressed: () => _onItemTapped(1),
+            _buildBottomAppBarItem(
+              iconData: Icons.shopping_bag,
+              label: 'Iklan',
+              index: 1,
+              isSelected: _currentIndex == 1,
             ),
-            const SizedBox(width: 40), // space for FAB
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () => _onItemTapped(2),
+            const SizedBox(width: 40),
+            _buildBottomAppBarItem(
+              iconData: Icons.notifications,
+              label: 'Notifikasi',
+              index: 2,
+              isSelected: _currentIndex == 2,
             ),
-            IconButton(
-              icon: const Icon(Icons.person),
-              onPressed: () => _onItemTapped(3),
+            _buildBottomAppBarItem(
+              iconData: Icons.person,
+              label: 'Profil',
+              index: 3,
+              isSelected: _currentIndex == 3,
             ),
           ],
         ),
