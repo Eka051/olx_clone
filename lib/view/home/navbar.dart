@@ -87,7 +87,7 @@ class _NavbarState extends State<Navbar> {
             ),
             _buildBottomAppBarItem(
               iconData: Icons.shopping_bag,
-              label: 'Iklan',
+              label: 'Paket',
               index: 1,
               isSelected: _currentIndex == 1,
             ),

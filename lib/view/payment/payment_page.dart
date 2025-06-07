@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:olx_clone/utils/theme.dart';
 
 class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
+  final String productId;
+  final String packageName;
+  final String duration;
+  final String price;
+
+  const PaymentPage({
+    super.key,
+    required this.productId,
+    required this.packageName,
+    required this.duration,
+    required this.price,
+  });
 
   @override
   State<PaymentPage> createState() => _PaymentPageState();
@@ -17,20 +29,31 @@ class _PaymentPageState extends State<PaymentPage> {
     'QRIS',
   ];
 
-  void _onPay() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pembayaran Berhasil!'),
-        content: const Text('Paket iklan Anda telah diaktifkan.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+  Future<void> _onPay() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('products')
+          .doc(widget.productId)
+          .update({'isPromoted': true});
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Pembayaran Berhasil!'),
+            content: const Text('Paket iklan Anda telah diaktifkan.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      debugPrint('Gagal update produk: $e');
+    }
   }
 
   @override
@@ -66,10 +89,10 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Paket: Top Ads'),
-                  Text('Durasi: 7 Hari'),
-                  Text('Harga: Rp 50.000'),
+                children: [
+                  Text('Paket: ${widget.packageName}'),
+                  Text('Durasi: ${widget.duration}'),
+                  Text('Harga: ${widget.price}'),
                 ],
               ),
             ),

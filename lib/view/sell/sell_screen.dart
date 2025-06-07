@@ -1,14 +1,16 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../widgets/custom_textfield.dart';
+import 'package:olx_clone/utils/theme.dart';
 
 class SellScreen extends StatefulWidget {
-  const SellScreen({super.key});
+  final String? productId;
+  final Map<String, dynamic>? initialData;
+
+  const SellScreen({super.key, this.productId, this.initialData});
 
   @override
   State<SellScreen> createState() => _SellScreenState();
@@ -16,87 +18,151 @@ class SellScreen extends StatefulWidget {
 
 class _SellScreenState extends State<SellScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _categoryController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+
   File? _pickedImage;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      _titleController.text = widget.initialData!['title'] ?? '';
+      _descController.text = widget.initialData!['description'] ?? '';
+      _priceController.text = widget.initialData!['price']?.toString() ?? '';
+      _locationController.text = widget.initialData!['location'] ?? '';
+      _categoryController.text = widget.initialData!['category'] ?? '';
+    }
+  }
 
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
+      setState(() => _pickedImage = File(pickedFile.path));
     }
   }
 
-  Future<void> _submitProduct() async {
-    if (!_formKey.currentState!.validate() || _pickedImage == null) return;
-
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+
     try {
-      final imageName = DateTime.now().millisecondsSinceEpoch.toString();
-      final storageRef = FirebaseStorage.instance.ref().child('product_images/$imageName.jpg');
-      await storageRef.putFile(_pickedImage!);
-      final imageUrl = await storageRef.getDownloadURL();
+      final user = FirebaseAuth.instance.currentUser;
+      String? imageUrl = widget.initialData?['imageUrl'];
 
-      final userId = FirebaseAuth.instance.currentUser!.uid;
+      if (_pickedImage != null) {
+        final imageName = DateTime.now().millisecondsSinceEpoch.toString();
+        final ref = FirebaseStorage.instance.ref().child('product_images/$imageName.jpg');
+        await ref.putFile(_pickedImage!);
+        imageUrl = await ref.getDownloadURL();
+      }
 
-      await FirebaseFirestore.instance.collection('products').add({
+      final productData = {
         'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'price': double.parse(_priceController.text.trim()),
+        'description': _descController.text.trim(),
+        'price': double.tryParse(_priceController.text) ?? 0,
         'location': _locationController.text.trim(),
         'category': _categoryController.text.trim(),
         'imageUrl': imageUrl,
-        'userId': userId,
-        'createdAt': Timestamp.now(),
-      });
+        'userId': user?.uid,
+        'updatedAt': Timestamp.now(),
+      };
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produk berhasil diupload.')));
-      Navigator.pop(context);
+      if (widget.productId != null) {
+        await FirebaseFirestore.instance
+            .collection('products')
+            .doc(widget.productId)
+            .update(productData);
+      } else {
+        productData['createdAt'] = Timestamp.now();
+        productData['isPromoted'] = false;
+        productData['isSold'] = false;
+        await FirebaseFirestore.instance.collection('products').add(productData);
+      }
+
+      if (mounted) Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal upload: $e')));
+      debugPrint('Gagal simpan: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Jual Produk')),
+      appBar: AppBar(
+        title: Text(widget.productId != null ? 'Edit Iklan' : 'Jual Produk'),
+        backgroundColor: AppTheme.of(context).primary,
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CustomTextField(controller: _titleController, label: 'Judul Produk'),
-              CustomTextField(controller: _descriptionController, label: 'Deskripsi', maxLines: 3),
-              CustomTextField(controller: _priceController, label: 'Harga', keyboardType: TextInputType.number),
-              CustomTextField(controller: _locationController, label: 'Lokasi'),
-              CustomTextField(controller: _categoryController, label: 'Kategori'),
-              const SizedBox(height: 12),
-              _pickedImage == null
-                  ? const Text('Belum ada gambar dipilih.')
-                  : Image.file(_pickedImage!, height: 150),
-              TextButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.image),
-                label: const Text('Pilih Gambar'),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 160,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey),
+                    image: _pickedImage != null
+                        ? DecorationImage(image: FileImage(_pickedImage!), fit: BoxFit.cover)
+                        : widget.initialData?['imageUrl'] != null
+                            ? DecorationImage(image: NetworkImage(widget.initialData!['imageUrl']), fit: BoxFit.cover)
+                            : null,
+                  ),
+                  child: _pickedImage == null && widget.initialData?['imageUrl'] == null
+                      ? const Icon(Icons.add_a_photo, size: 48)
+                      : null,
+                ),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitProduct,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Upload Produk'),
-              )
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Judul Produk'),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              TextFormField(
+                controller: _descController,
+                decoration: const InputDecoration(labelText: 'Deskripsi'),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              TextFormField(
+                controller: _priceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Harga'),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(labelText: 'Lokasi'),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              TextFormField(
+                controller: _categoryController,
+                decoration: const InputDecoration(labelText: 'Kategori'),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              const SizedBox(height: 24),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.of(context).primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                      ),
+                      child: Text(widget.productId != null ? 'Simpan Perubahan' : 'Upload Produk'),
+                    )
             ],
           ),
         ),
