@@ -45,6 +45,10 @@ dependencies:
   firebase_auth: ^5.5.3
   firebase_app_check: ^0.3.2+6
 
+  # [Alfin - Tambahan untuk fitur upload produk]
+  image_picker: ^1.0.7
+  firebase_storage: ^12.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

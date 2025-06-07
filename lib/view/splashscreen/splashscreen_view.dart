@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/utils/theme.dart';
-import 'package:provider/provider.dart';
 
 class SplashscreenView extends StatefulWidget {
   const SplashscreenView({super.key});
@@ -22,18 +20,10 @@ class _SplashscreenViewState extends State<SplashscreenView> {
   }
 
   Future<void> _initializeApp() async {
-    final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
-
-    await authProvider.getLoginStatus();
-
     await Future.delayed(const Duration(seconds: 3));
 
     if (mounted) {
-      if (authProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/auth-option');
-      }
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 

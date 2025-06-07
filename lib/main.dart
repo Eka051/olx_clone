@@ -41,7 +41,6 @@ class OlxClone extends StatelessWidget {
       theme: ThemeData(
         textTheme: AppTheme.createTextTheme(ThemeData.light().textTheme),
       ),
-      // home: const SplashscreenView(),
       debugShowCheckedModeBanner: false,
       routes: {
         AppRoutes.splash: (_) => const SplashscreenView(),
@@ -51,28 +50,27 @@ class OlxClone extends StatelessWidget {
         AppRoutes.loginEmail: (_) => const LoginEmail(),
         AppRoutes.home: (_) => const HomeView(),
       },
-      initialRoute: AppRoutes.splash,
+      // Ganti route awal ke HomeView langsung tanpa login
+      initialRoute: AppRoutes.home,
       onGenerateRoute: (settings) {
         if (settings.name == '/input-otp') {
           final args = settings.arguments as Map<String, dynamic>;
 
           if (args['type'] == 'phone') {
             return MaterialPageRoute(
-              builder:
-                  (context) => InputOtp(
-                    phoneNumber: args['phoneNumber'],
-                    verificationId: args['verificationId'],
-                    type: 'phone',
-                  ),
+              builder: (context) => InputOtp(
+                phoneNumber: args['phoneNumber'],
+                verificationId: args['verificationId'],
+                type: 'phone',
+              ),
             );
           } else if (args['type'] == 'email') {
             return MaterialPageRoute(
-              builder:
-                  (context) => InputOtp(
-                    email: args['email'],
-                    verificationId: args['verificationId'],
-                    type: 'email',
-                  ),
+              builder: (context) => InputOtp(
+                email: args['email'],
+                verificationId: args['verificationId'],
+                type: 'email',
+              ),
             );
           }
         }
