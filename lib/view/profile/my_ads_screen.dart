@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:olx_clone/view/sell/sell_screen.dart';
+import 'package:olx_clone/view/sell/upload_product_screen.dart';
 
 class MyAdsScreen extends StatelessWidget {
   const MyAdsScreen({super.key});
@@ -17,7 +18,8 @@ class MyAdsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseFirestore.instance.app.options.projectId;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Iklan Saya')),
       body: StreamBuilder<QuerySnapshot>(
@@ -51,14 +53,17 @@ class MyAdsScreen extends StatelessWidget {
                       ? Image.network(data['imageUrl'], width: 60, height: 60, fit: BoxFit.cover)
                       : const Icon(Icons.image, size: 40),
                   title: Text(data['title'] ?? 'Tanpa Judul'),
-                  subtitle: Text("Rp ${data['price'].toString()}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    "Rp ${data['price'].toString()}",
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) {
                       if (value == 'edit') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SellScreen(
+                            builder: (_) => UploadProductScreen(
                               productId: docId,
                               initialData: data,
                             ),

@@ -6,17 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:olx_clone/utils/theme.dart';
 
-class SellScreen extends StatefulWidget {
+class UploadProductScreen extends StatefulWidget {
   final String? productId;
   final Map<String, dynamic>? initialData;
 
-  const SellScreen({super.key, this.productId, this.initialData});
+  const UploadProductScreen({super.key, this.productId, this.initialData});
 
   @override
-  State<SellScreen> createState() => _SellScreenState();
+  State<UploadProductScreen> createState() => _UploadProductScreenState();
 }
 
-class _SellScreenState extends State<SellScreen> {
+class _UploadProductScreenState extends State<UploadProductScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();

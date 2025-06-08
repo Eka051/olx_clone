@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:olx_clone/view/home/home_page.dart';
 import 'package:olx_clone/view/package/package_cart_screen.dart';
 import 'package:olx_clone/view/profile/profile_page.dart';
-import 'package:olx_clone/view/sell/sell_screen.dart';
+import 'package:olx_clone/view/profile/my_ads_screen.dart';
+import 'package:olx_clone/view/sell/upload_product_screen.dart';
 import 'package:olx_clone/view/notification/notification_page.dart';
 import 'package:olx_clone/utils/theme.dart';
 
@@ -21,6 +22,7 @@ class _NavbarState extends State<Navbar> {
     const PackageCartScreen(),
     const NotificationPage(),
     const ProfilePage(),
+    const MyAdsScreen(), // ✅ Tab baru untuk iklan saya
   ];
 
   void _onItemTapped(int index) {
@@ -32,7 +34,9 @@ class _NavbarState extends State<Navbar> {
   void _onSellButtonPressed() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SellScreen()),
+      MaterialPageRoute(
+        builder: (context) => const UploadProductScreen(), // ✅ Sudah diganti dari SellScreen
+      ),
     );
   }
 
@@ -62,7 +66,7 @@ class _NavbarState extends State<Navbar> {
                   fontSize: 12,
                   color: isSelected ? AppTheme.of(context).primary : Colors.grey,
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -103,6 +107,12 @@ class _NavbarState extends State<Navbar> {
               label: 'Profil',
               index: 3,
               isSelected: _currentIndex == 3,
+            ),
+            _buildBottomAppBarItem(
+              iconData: Icons.store,
+              label: 'Iklan Saya',
+              index: 4,
+              isSelected: _currentIndex == 4,
             ),
           ],
         ),
