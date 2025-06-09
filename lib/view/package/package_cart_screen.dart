@@ -40,10 +40,10 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://your-api-url.com/api/payments/create'), // GANTI DENGAN API SEBENAR
+        Uri.parse('https://your-api-url.com/api/payments/create'), // GANTI
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'userId': 1, // GANTI SEMENTARA, nanti pakai dari login
+          'userId': 1, // TODO: Ganti dengan user login sesungguhnya
           'packageName': selected['name'],
           'price': selected['price'],
         }),
@@ -61,7 +61,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
           throw Exception('Tidak bisa membuka link pembayaran.');
         }
       } else {
-        throw Exception('Gagal membuat pembayaran.');
+        throw Exception('Gagal membuat pembayaran. Coba beberapa saat lagi.');
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -133,7 +133,11 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : checkoutPackage,
                     child: _isLoading
-                        ? const CircularProgressIndicator()
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Text('Lanjut ke Pembayaran'),
                   ),
                 ],
