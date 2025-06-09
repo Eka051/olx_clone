@@ -35,7 +35,9 @@ class _NavbarState extends State<Navbar> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const UploadProductScreen(), // ✅ Sudah diganti dari SellScreen
+        builder:
+            (context) =>
+                const UploadProductScreen(), // ✅ Sudah diganti dari SellScreen
       ),
     );
   }
@@ -64,7 +66,8 @@ class _NavbarState extends State<Navbar> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isSelected ? AppTheme.of(context).primary : Colors.grey,
+                  color:
+                      isSelected ? AppTheme.of(context).primary : Colors.grey,
                 ),
               ),
             ],

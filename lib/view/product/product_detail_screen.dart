@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:olx_clone/view/product/product_detail_screen.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -21,21 +22,24 @@ class _HomeViewState extends State<HomeView> {
       'harga': 2500000,
       'lokasi': 'Surabaya',
       'kategori': 'Elektronik',
-      'gambarUrl': 'https://picsum.photos/200/300?random=1'
+      'gambarUrl': 'https://picsum.photos/200/300?random=1',
+      'deskripsi': 'Laptop bekas mulus fullset'
     },
     {
       'judul': 'iPhone 12 Pro',
       'harga': 7500000,
       'lokasi': 'Jakarta',
       'kategori': 'Elektronik',
-      'gambarUrl': 'https://picsum.photos/200/300?random=2'
+      'gambarUrl': 'https://picsum.photos/200/300?random=2',
+      'deskripsi': 'iPhone 12 Pro 128GB, fullset, batre 89%'
     },
     {
       'judul': 'Motor Beat 2020',
       'harga': 11000000,
       'lokasi': 'Malang',
       'kategori': 'Kendaraan',
-      'gambarUrl': 'https://picsum.photos/200/300?random=3'
+      'gambarUrl': 'https://picsum.photos/200/300?random=3',
+      'deskripsi': 'Motor Beat 2020, surat lengkap, pajak panjang'
     },
   ];
 
@@ -111,7 +115,14 @@ class _HomeViewState extends State<HomeView> {
                 itemBuilder: (context, index) {
                   final product = _filteredProducts[index];
                   return InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(product: product),
+                        ),
+                      );
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),

@@ -49,6 +49,9 @@ dependencies:
   image_picker: ^1.0.7
   firebase_storage: ^12.1.0
 
+  # ✅ Tambahan untuk NumberFormat (harga, tanggal, dll)
+  intl: ^0.18.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
