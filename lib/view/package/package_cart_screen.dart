@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+
+import 'package:olx_clone/providers/auth_provider.dart';
 
 class PackageCartScreen extends StatefulWidget {
   const PackageCartScreen({super.key});
@@ -36,6 +39,16 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
     if (selectedIndex == null) return;
 
     final selected = packages[selectedIndex!];
+    final userProvider = Provider.of<AuthProviderApp>(context, listen: false);
+    final userId = userProvider.user?.id;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User belum login')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -43,7 +56,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
         Uri.parse('https://your-api-url.com/api/payments/create'), // GANTI
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'userId': 1, // TODO: Ganti dengan user login sesungguhnya
+          'userId': userId,
           'packageName': selected['name'],
           'price': selected['price'],
         }),
@@ -61,7 +74,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
           throw Exception('Tidak bisa membuka link pembayaran.');
         }
       } else {
-        throw Exception('Gagal membuat pembayaran. Coba beberapa saat lagi.');
+        throw Exception('Gagal membuat pembayaran.');
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -87,9 +100,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
         selectedIndex != null ? packages[selectedIndex!] : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Keranjang Paket Iklan'),
-      ),
+      appBar: AppBar(title: const Text('Keranjang Paket Iklan')),
       body: Column(
         children: [
           Expanded(
@@ -98,8 +109,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
               itemBuilder: (context, index) {
                 final pkg = packages[index];
                 return Card(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(pkg['name']),
                     subtitle: Text(pkg['description']),
@@ -108,9 +118,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
                       value: index,
                       groupValue: selectedIndex,
                       onChanged: (value) {
-                        setState(() {
-                          selectedIndex = value;
-                        });
+                        setState(() => selectedIndex = value);
                       },
                     ),
                   ),
@@ -142,7 +150,7 @@ class _PackageCartScreenState extends State<PackageCartScreen> {
                   ),
                 ],
               ),
-            ),
+            )
         ],
       ),
     );

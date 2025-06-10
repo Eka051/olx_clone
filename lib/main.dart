@@ -16,9 +16,11 @@ import 'package:olx_clone/view/home/navbar.dart';
 import 'package:olx_clone/view/sell/upload_product_screen.dart';
 import 'package:olx_clone/view/profile/my_ads_screen.dart';
 import 'package:olx_clone/view/package/package_cart_screen.dart';
+import 'package:olx_clone/view/package/purchase_history_screen.dart'; // ✅ Tambahan
 import 'package:olx_clone/view/profile/profile_page.dart';
 import 'package:olx_clone/view/notification/notification_page.dart';
 import 'package:provider/provider.dart';
+
 
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +39,7 @@ import 'package:provider/provider.dart';
 //     ),
 //   );
 // }
-
+//
 // class OlxClone extends StatelessWidget {
 //   const OlxClone({super.key});
 //
@@ -125,6 +127,7 @@ class MyApp extends StatelessWidget {
         '/home': (_) => const HomeView(),
         '/notification': (_) => const NotificationPage(),
         '/package': (_) => const PackageCartScreen(),
+        '/purchase-history': (_) => const PurchaseHistoryScreen(), // ✅ Tambahan
       },
     );
   }
