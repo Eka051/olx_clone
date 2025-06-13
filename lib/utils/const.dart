@@ -3,6 +3,7 @@ class AppAssets {
   static const String astraLogo = 'assets/images/LOGO-MEMBER-ASTRA.png';
   static const String darkLogo = 'assets/images/OLX-LOGO-DARK.png';
   static const String lightLogo = 'assets/images/OLX-LOGO-WHITE.png';
+  static const String olxBlueLogo = 'assets/images/OLX-LOGO-BLUE.png';
 }
 
 /// String Constants

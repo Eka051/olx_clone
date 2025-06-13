@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/utils/const.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:provider/provider.dart';
 
@@ -55,11 +56,7 @@ class _SplashscreenViewState extends State<SplashscreenView> {
               children: [
                 const Spacer(),
                 const SizedBox(height: 20),
-                Image.asset(
-                  'assets/images/LOGO-MEMBER-ASTRA.png',
-                  width: 150,
-                  height: 150,
-                ),
+                Image.asset(AppAssets.astraLogo, width: 150, height: 150),
                 const SizedBox(height: 10),
                 const Spacer(),
                 Padding(
