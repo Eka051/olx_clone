@@ -126,15 +126,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
             Positioned(
               top: -35,
-              child: GestureDetector(
-                onTap: () => _onItemTapped(2),
-                child:
-                    _fabAnimation != null
-                        ? ScaleTransition(
-                          scale: _fabAnimation!,
-                          child: _buildFABContainer(),
-                        )
-                        : _buildFABContainer(),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () => _onItemTapped(2),
+                    child:
+                        _fabAnimation != null
+                            ? ScaleTransition(
+                              scale: _fabAnimation!,
+                              child: _buildFABContainer(),
+                            )
+                            : _buildFABContainer(),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Jual', style: AppTheme.of(context).textStyle.bodySmall.copyWith(
+                    color: AppTheme.of(context).colors.primary,
+                    fontWeight: FontWeight.w600,
+                  )),
+                ],
               ),
             ),
           ],
@@ -199,8 +208,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   Widget _buildFABContainer() {
     return Container(
-      height: 70,
-      width: 70,
+      height: 60,
+      width: 60,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
@@ -222,8 +231,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         painter: FullCircleTripleArcPainter(),
         child: Center(
           child: Container(
-            height: 56,
-            width: 56,
+            height: 50,
+            width: 50,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
