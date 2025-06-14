@@ -11,6 +11,7 @@ import 'package:olx_clone/view/auth/login.dart';
 import 'package:olx_clone/view/auth/login_email.dart';
 import 'package:olx_clone/view/auth/login_phone.dart';
 import 'package:olx_clone/view/home/home_view.dart';
+import 'package:olx_clone/view/main_screen.dart';
 import 'package:olx_clone/view/splashscreen/splashscreen_view.dart';
 import 'package:provider/provider.dart';
 
@@ -49,7 +50,7 @@ class OlxClone extends StatelessWidget {
         AppRoutes.authOption: (_) => const AuthOption(),
         AppRoutes.loginPhone: (_) => const LoginPhone(),
         AppRoutes.loginEmail: (_) => const LoginEmail(),
-        AppRoutes.home: (_) => const HomeView(),
+        AppRoutes.home: (_) => const MainScreen(),
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: (settings) {
