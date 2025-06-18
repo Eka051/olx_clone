@@ -4,8 +4,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/utils/const.dart';
 import 'package:olx_clone/utils/theme.dart';
-import 'package:olx_clone/view/auth/login_phone.dart';
-import 'package:olx_clone/view/splashscreen/splashscreen_view.dart';
+import 'package:olx_clone/views/auth/login_phone.dart';
+import 'package:olx_clone/views/splashscreen/splashscreen_view.dart';
 import 'package:olx_clone/widgets/app_filled_button.dart';
 import 'package:provider/provider.dart';
 
