@@ -451,7 +451,7 @@ class AuthProviderApp with ChangeNotifier {
     errorMessage = null;
     successMessage = null;
     notifyListeners();
-    final url = Uri.parse('$_backendUrl/api/auth/email-otps');
+    final url = Uri.parse('$_backendUrl/api/auth/email/otp');
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -521,7 +521,7 @@ class AuthProviderApp with ChangeNotifier {
     errorMessage = null;
     successMessage = null;
     notifyListeners();
-    final url = Uri.parse('$_backendUrl/api/auth/email-verifications');
+    final url = Uri.parse('$_backendUrl/api/auth/email/verify');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'email': email, 'otp': code});
     try {
