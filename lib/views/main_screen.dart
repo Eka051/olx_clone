@@ -3,7 +3,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:math' as math;
 
 import 'package:olx_clone/utils/theme.dart';
-import 'package:olx_clone/view/home/home_view.dart';
+import 'package:olx_clone/views/home/home_view.dart';
+import 'package:olx_clone/views/chat/chat_view.dart';
+import 'package:olx_clone/views/product/select_category_view.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,10 +18,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
   AnimationController? _fabAnimationController;
   Animation<double>? _fabAnimation;
-
   final List<Widget> _screens = [
     HomeView(),
-    const Center(child: Text('Chat')),
+    const ChatView(),
     const Center(child: Text('Jual')),
     const Center(child: Text('Iklan Saya')),
     const Center(child: Text('Akun Saya')),
@@ -54,6 +55,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bottomNavHeight = screenHeight * 0.075;
+    final clampedNavHeight = bottomNavHeight.clamp(60.0, 80.0);
+
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
@@ -72,7 +77,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           alignment: Alignment.topCenter,
           children: [
             Container(
-              height: 60,
+              height: clampedNavHeight,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -91,7 +96,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  vertical: clampedNavHeight * 0.05,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -125,11 +132,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
             ),
             Positioned(
-              top: -35,
+              top: -(clampedNavHeight * 0.6),
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: () => _onItemTapped(2),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SelectCategoryView(),
+                        ),
+                      );
+                    },
                     child:
                         _fabAnimation != null
                             ? ScaleTransition(
@@ -138,11 +152,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             )
                             : _buildFABContainer(),
                   ),
-                  const SizedBox(height: 10),
-                  Text('Jual', style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                    color: AppTheme.of(context).colors.primary,
-                    fontWeight: FontWeight.w600,
-                  )),
+                  SizedBox(height: clampedNavHeight * 0.15),
+                  Text(
+                    'Jual',
+                    style: AppTheme.of(context).textStyle.bodySmall.copyWith(
+                      color: AppTheme.of(context).colors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: MediaQuery.of(context).size.width * 0.028,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -167,7 +185,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           onTap: () => _onItemTapped(index),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: EdgeInsets.symmetric(
+              vertical: MediaQuery.of(context).size.height * 0.008,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -180,10 +200,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         isSelected
                             ? AppTheme.of(context).colors.primary
                             : Colors.grey[600],
-                    size: 26,
+                    size: MediaQuery.of(context).size.width * 0.065,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.003),
                 Text(
                   label,
                   style: TextStyle(
@@ -191,7 +211,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         isSelected
                             ? AppTheme.of(context).colors.primary
                             : Colors.grey[600],
-                    fontSize: 12,
+                    fontSize: MediaQuery.of(context).size.width * 0.03,
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
@@ -207,9 +227,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildFABContainer() {
+    final fabSize = MediaQuery.of(context).size.width * 0.15;
+    final clampedFabSize = fabSize.clamp(50.0, 70.0);
+
     return Container(
-      height: 60,
-      width: 60,
+      height: clampedFabSize,
+      width: clampedFabSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
@@ -244,7 +267,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            child: const Icon(Icons.add, size: 30),
+            child: Icon(Icons.add, size: clampedFabSize * 0.5),
           ),
         ),
       ),

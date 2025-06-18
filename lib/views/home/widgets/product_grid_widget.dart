@@ -100,7 +100,7 @@ class ProductGridWidget extends StatelessWidget {
                   const SizedBox(height: 4),
                   // Price
                   Text(
-                    product.price,
+                    product.price.toString(),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

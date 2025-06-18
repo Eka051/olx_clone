@@ -34,6 +34,8 @@ class AppRoutes {
   static const String myAds = '/my-ads';
   static const String myAccount = '/my-account';
 
+  static const String category = '/categories';
+  static const String categoryDetails = '/category-details';
   static const String addListing = '/add-listing';
   static const String productDetails = '/product-details';
   static const String settings = '/settings';

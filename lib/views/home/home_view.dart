@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:olx_clone/utils/theme.dart';
-import 'package:olx_clone/view/home/widgets/sliver_category_widget.dart';
+import 'package:olx_clone/views/home/widgets/sliver_category_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/providers/home_provider.dart';
-import 'package:olx_clone/view/home/widgets/home_app_bar.dart';
-import 'package:olx_clone/view/home/widgets/location_widget.dart';
-import 'package:olx_clone/view/home/widgets/search_bar_widget.dart';
-import 'package:olx_clone/view/home/widgets/auto_carousel_widget.dart';
-import 'package:olx_clone/view/home/widgets/product_grid_widget.dart';
+import 'package:olx_clone/views/home/widgets/home_app_bar.dart';
+import 'package:olx_clone/views/home/widgets/location_widget.dart';
+import 'package:olx_clone/views/home/widgets/search_bar_widget.dart';
+import 'package:olx_clone/views/home/widgets/auto_carousel_widget.dart';
+import 'package:olx_clone/views/home/widgets/product_grid_widget.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -19,11 +20,18 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
+    SystemUiOverlayStyle systemUiOverlayStyle = SystemUiOverlayStyle(
+      statusBarColor: AppTheme.of(context).colors.primary,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.dark,
+    );
     return ChangeNotifierProvider(
       create: (context) => HomeProvider(),
       child: Consumer<HomeProvider>(
         builder: (context, homeProvider, child) {
-          return GestureDetector(
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: systemUiOverlayStyle,
+            child: GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
             },
@@ -69,7 +77,9 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/categories');
+                              },
                               child: Text(
                                 'Lihat Semua',
                                 style: AppTheme.of(
@@ -114,12 +124,8 @@ class _HomeViewState extends State<HomeView> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       sliver: ProductGridWidget(itemCount: 20),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
+                    ),                  ],                ),              ),            ),
+          ));
         },
       ),
     );
