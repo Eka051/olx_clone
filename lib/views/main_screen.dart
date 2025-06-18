@@ -6,6 +6,7 @@ import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/views/home/home_view.dart';
 import 'package:olx_clone/views/chat/chat_view.dart';
 import 'package:olx_clone/views/product/select_category_view.dart';
+import 'package:olx_clone/views/sell/sell_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -21,7 +22,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   final List<Widget> _screens = [
     HomeView(),
     const ChatView(),
-    const Center(child: Text('Jual')),
+    SellScreen(),
     const Center(child: Text('Iklan Saya')),
     const Center(child: Text('Akun Saya')),
   ];

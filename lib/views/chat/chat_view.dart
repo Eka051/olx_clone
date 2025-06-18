@@ -112,7 +112,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       children: [
                         SizedBox(height: deviceHeight * 0.01),
                         SizedBox(
-                          height: deviceHeight * 0.03,
+                          height: deviceHeight * 0.05,
                           child: Image.asset(
                             AppAssets.olxBlueLogo,
                             fit: BoxFit.contain,
@@ -131,9 +131,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         SizedBox(height: deviceHeight * 0.02),
                         Text(
                           'Obrolan',
-                          style: theme.textTheme.headlineMedium?.copyWith(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             color: colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
+                            fontSize: deviceWidth * 0.05,
                           ),
                         ),
                       ],
@@ -147,7 +147,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                           indicatorColor: AppTheme.of(context).colors.primary,
                           labelColor: AppTheme.of(context).colors.primary,
                           unselectedLabelColor: Colors.grey[600],
-                          indicatorWeight: 3.0,
+                          indicatorWeight: 5.0,
                           labelStyle: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -199,83 +199,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     ChatFilterProvider filterProvider,
     int tabIndex,
   ) {
-    final deviceWidth = MediaQuery.of(context).size.width;
-
-    return Column(
-      children: [
-        Container(
-          height: 30,
-          padding: EdgeInsets.symmetric(horizontal: deviceWidth * 0.04),
-          child: Row(
-            children: [
-              Expanded(
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildQuickFilterChip(context, 'Semua', filterProvider),
-                    const SizedBox(width: 8),
-                    _buildQuickFilterChip(context, 'Pertemuan', filterProvider),
-                    const SizedBox(width: 8),
-                    _buildQuickFilterChip(
-                      context,
-                      'Belum Dibaca',
-                      filterProvider,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickFilterChip(context, 'Penting', filterProvider),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _buildChatList(
-            context,
-            chatListProvider,
-            filterProvider,
-            tabIndex,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickFilterChip(
-    BuildContext context,
-    String title,
-    ChatFilterProvider filterProvider,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isSelected = filterProvider.selectedQuickFilter == title;
-
-    return GestureDetector(
-      onTap: () => filterProvider.setQuickFilter(title),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? colorScheme.primary.withOpacity(0.1)
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                isSelected
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.3),
-          ),
-        ),
-        child: Text(
-          title,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
+    return _buildChatList(context, chatListProvider, filterProvider, tabIndex);
   }
 
   Widget _buildChatList(
