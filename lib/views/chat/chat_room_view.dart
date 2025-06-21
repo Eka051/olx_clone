@@ -3,13 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/providers/chat_room_provider.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/models/chat_room.dart';
 import 'package:olx_clone/models/message.dart';
+import 'package:olx_clone/models/product.dart';
 
 class ChatRoomView extends StatefulWidget {
   final ChatRoom chatRoom;
+  final Product? product;
 
-  const ChatRoomView({super.key, required this.chatRoom});
+  const ChatRoomView({super.key, required this.chatRoom, this.product});
 
   @override
   State<ChatRoomView> createState() => _ChatRoomViewState();
@@ -17,12 +20,17 @@ class ChatRoomView extends StatefulWidget {
 
 class _ChatRoomViewState extends State<ChatRoomView> {
   final ScrollController _scrollController = ScrollController();
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatRoomProvider>().initializeChatRoom(widget.chatRoom);
+      final authProvider = context.read<AuthProviderApp>();
+      if (authProvider.jwtToken != null) {
+        context.read<ChatRoomProvider>().initializeChatRoom(
+          widget.chatRoom,
+          authProvider.jwtToken!,
+        );
+      }
       _scrollToBottom();
     });
   }
@@ -101,20 +109,12 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         ),
         title: Row(
           children: [
-            // User Avatar
             CircleAvatar(
               radius: deviceWidth * 0.05,
               backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: AssetImage(widget.chatRoom.participantAvatar),
+              backgroundImage: AssetImage('assets/images/avatar.png'),
               onBackgroundImageError: (_, __) {},
-              child:
-                  widget.chatRoom.participantAvatar.isEmpty
-                      ? Icon(
-                        Icons.person,
-                        size: deviceWidth * 0.06,
-                        color: Colors.white,
-                      )
-                      : null,
+              child: null,
             ),
             SizedBox(width: deviceWidth * 0.03),
 
@@ -125,7 +125,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.chatRoom.participantName,
+                    widget.chatRoom.sellerName,
                     style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -133,14 +133,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (widget.chatRoom.isOnline)
-                    Text(
-                      'Online',
-                      style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: deviceWidth * 0.032,
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -166,6 +158,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   }
 
   Widget _buildProductHeader(BuildContext context, double deviceWidth) {
+    if (widget.product == null) return const SizedBox.shrink();
+
+    final product = widget.product!;
+
     return Container(
       margin: EdgeInsets.all(deviceWidth * 0.04),
       padding: EdgeInsets.all(deviceWidth * 0.04),
@@ -193,17 +189,24 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                widget.chatRoom.productImage,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.image,
-                    color: Colors.grey[400],
-                    size: deviceWidth * 0.08,
-                  );
-                },
-              ),
+              child:
+                  product.images.isNotEmpty
+                      ? Image.network(
+                        product.images.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.image,
+                            color: Colors.grey[400],
+                            size: deviceWidth * 0.08,
+                          );
+                        },
+                      )
+                      : Icon(
+                        Icons.image,
+                        color: Colors.grey[400],
+                        size: deviceWidth * 0.08,
+                      ),
             ),
           ),
           SizedBox(width: deviceWidth * 0.04),
@@ -214,7 +217,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.chatRoom.productTitle,
+                  product.title,
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.of(context).colors.primaryTextColor,
@@ -225,7 +228,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 ),
                 SizedBox(height: deviceWidth * 0.02),
                 Text(
-                  widget.chatRoom.productPrice,
+                  product.formattedPrice,
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     color: AppTheme.of(context).colors.primary,
                     fontWeight: FontWeight.bold,
@@ -234,24 +237,31 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 ),
               ],
             ),
-          ),
-
-          // Action Button
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: deviceWidth * 0.03,
-              vertical: deviceWidth * 0.02,
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.of(context).colors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'Lihat',
-              style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                color: AppTheme.of(context).colors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: deviceWidth * 0.032,
+          ), // Action Button
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/product-details',
+                arguments: product,
+              );
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: deviceWidth * 0.03,
+                vertical: deviceWidth * 0.02,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.of(context).colors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'Lihat',
+                style: AppTheme.of(context).textStyle.bodySmall.copyWith(
+                  color: AppTheme.of(context).colors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: deviceWidth * 0.032,
+                ),
               ),
             ),
           ),
@@ -295,7 +305,13 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               SizedBox(height: deviceWidth * 0.02),
               ElevatedButton(
                 onPressed: () {
-                  chatProvider.fetchMessages(widget.chatRoom.id);
+                  final authProvider = context.read<AuthProviderApp>();
+                  if (authProvider.jwtToken != null) {
+                    chatProvider.fetchMessages(
+                      widget.chatRoom.id,
+                      authProvider.jwtToken!,
+                    );
+                  }
                 },
                 child: const Text('Coba Lagi'),
               ),
@@ -314,9 +330,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       itemCount: chatProvider.messages.length,
       itemBuilder: (context, index) {
         final message = chatProvider.messages[index];
+        final authProvider = context.read<AuthProviderApp>();
         final isMe =
             message.senderId ==
-            'current_user_123'; // This should match the current user ID
+            (authProvider.currentFirebaseUser?.uid ?? 'current_user');
 
         return _buildMessageBubble(context, message, isMe, deviceWidth);
       },
@@ -340,16 +357,9 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             CircleAvatar(
               radius: deviceWidth * 0.04,
               backgroundColor: Colors.grey[300],
-              backgroundImage: AssetImage(widget.chatRoom.participantAvatar),
+              backgroundImage: AssetImage('assets/images/avatar.png'),
               onBackgroundImageError: (_, __) {},
-              child:
-                  widget.chatRoom.participantAvatar.isEmpty
-                      ? Icon(
-                        Icons.person,
-                        size: deviceWidth * 0.04,
-                        color: Colors.grey[600],
-                      )
-                      : null,
+              child: null,
             ),
             SizedBox(width: deviceWidth * 0.02),
           ],

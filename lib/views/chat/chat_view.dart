@@ -327,7 +327,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
-                  chatRoom.productImage,
+                  'assets/images/image-ads.jpg',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -357,7 +357,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            chatRoom.participantAvatar,
+                            'assets/images/avatar.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
@@ -375,7 +375,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          chatRoom.participantName,
+                          chatRoom.buyerName,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onBackground,
@@ -384,15 +384,6 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (chatRoom.isOnline)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -409,7 +400,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                     children: [
                       Expanded(
                         child: Text(
-                          chatRoom.lastMessage,
+                          chatRoom.lastMessage ?? '',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onBackground.withOpacity(0.6),
                           ),
@@ -419,7 +410,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _formatTime(chatRoom.lastMessageTime),
+                        _formatTime(chatRoom.lastMessageAt ?? DateTime.now()),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onBackground.withOpacity(0.5),
                         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:olx_clone/models/chat_room.dart';
-import 'package:olx_clone/models/api_message.dart';
-import 'package:olx_clone/services/api_service.dart';
+import 'package:olx_clone/services/chat_service.dart';
 import 'package:olx_clone/providers/chat_filter_provider.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 
@@ -25,10 +24,9 @@ class ChatListProvider extends ChangeNotifier {
     return filterProvider.getFilteredChats<ChatRoom>(
       _chatRooms,
       getType: (chat) => _determineChatType(chat),
-      isImportant:
-          (chat) => chat.unreadCount > 0,
+      isImportant: (chat) => chat.unreadCount > 0,
       hasUnread: (chat) => chat.unreadCount > 0,
-      getParticipantName: (chat) => chat.participantName,
+      getParticipantName: (chat) => chat.buyerName,
       getProductTitle: (chat) => chat.productTitle,
     );
   }
@@ -52,12 +50,15 @@ class ChatListProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_authProvider.backendToken == null) {
+      if (_authProvider.jwtToken == null) {
         throw Exception('User not authenticated. Please login again.');
       }
 
-      final messages = await ApiService.getMessages(_authProvider.backendToken);
-      _chatRooms = _convertMessagesToChatRooms(messages);
+      final chatRoomsData = await ChatService.getChatRooms(
+        _authProvider.jwtToken!,
+      );
+      _chatRooms =
+          chatRoomsData.map((data) => ChatRoom.fromJson(data)).toList();
     } catch (e) {
       _error = e.toString();
       _chatRooms = [];
@@ -67,55 +68,16 @@ class ChatListProvider extends ChangeNotifier {
     }
   }
 
-  List<ChatRoom> _convertMessagesToChatRooms(List<ApiMessage> messages) {
-    if (messages.isEmpty) return [];
-
-    Map<String, List<ApiMessage>> groupedMessages = {};
-    for (var message in messages) {
-      if (!groupedMessages.containsKey(message.chatRoomId)) {
-        groupedMessages[message.chatRoomId] = [];
-      }
-      groupedMessages[message.chatRoomId]!.add(message);
-    }
-
-    List<ChatRoom> chatRooms = [];
-    groupedMessages.forEach((chatRoomId, messageList) {
-      messageList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final latestMessage = messageList.first;
-      final unreadCount = messageList.where((m) => !m.isRead).length;
-
-      chatRooms.add(
-        ChatRoom(
-          id: chatRoomId,
-          productId: 'product_${chatRoomId.substring(0, 8)}',
-          productTitle: 'Product Chat',
-          productImage: 'assets/images/image-ads.jpg',
-          productPrice: 'Rp 0',
-          participantId: latestMessage.senderId,
-          participantName: 'User ${latestMessage.senderId.substring(0, 8)}',
-          participantAvatar: 'assets/images/avatar.png',
-          lastMessage: latestMessage.content,
-          lastMessageTime: latestMessage.createdAt,
-          unreadCount: unreadCount,
-          isOnline: false,
-        ),
-      );
-    });
-
-    chatRooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
-    return chatRooms;
-  }
-
   Future<bool> sendMessage(String chatRoomId, String content) async {
     try {
-      if (_authProvider.backendToken == null) {
+      if (_authProvider.jwtToken == null) {
         throw Exception('User not authenticated. Please login again.');
       }
 
-      return await ApiService.sendMessage(
-        chatRoomId: chatRoomId,
-        content: content,
-        authToken: _authProvider.backendToken,
+      return await ChatService.sendMessage(
+        chatRoomId,
+        content,
+        _authProvider.jwtToken!,
       );
     } catch (e) {
       _error = e.toString();
@@ -142,15 +104,14 @@ class ChatListProvider extends ChangeNotifier {
         id: _chatRooms[index].id,
         productId: _chatRooms[index].productId,
         productTitle: _chatRooms[index].productTitle,
-        productImage: _chatRooms[index].productImage,
-        productPrice: _chatRooms[index].productPrice,
-        participantId: _chatRooms[index].participantId,
-        participantName: _chatRooms[index].participantName,
-        participantAvatar: _chatRooms[index].participantAvatar,
+        buyerId: _chatRooms[index].buyerId,
+        buyerName: _chatRooms[index].buyerName,
+        sellerId: _chatRooms[index].sellerId,
+        sellerName: _chatRooms[index].sellerName,
+        createdAt: _chatRooms[index].createdAt,
         lastMessage: message,
-        lastMessageTime: timestamp,
+        lastMessageAt: timestamp,
         unreadCount: unreadCount,
-        isOnline: _chatRooms[index].isOnline,
       );
 
       _chatRooms.removeAt(index);
@@ -166,15 +127,14 @@ class ChatListProvider extends ChangeNotifier {
         id: _chatRooms[index].id,
         productId: _chatRooms[index].productId,
         productTitle: _chatRooms[index].productTitle,
-        productImage: _chatRooms[index].productImage,
-        productPrice: _chatRooms[index].productPrice,
-        participantId: _chatRooms[index].participantId,
-        participantName: _chatRooms[index].participantName,
-        participantAvatar: _chatRooms[index].participantAvatar,
+        buyerId: _chatRooms[index].buyerId,
+        buyerName: _chatRooms[index].buyerName,
+        sellerId: _chatRooms[index].sellerId,
+        sellerName: _chatRooms[index].sellerName,
+        createdAt: _chatRooms[index].createdAt,
         lastMessage: _chatRooms[index].lastMessage,
-        lastMessageTime: _chatRooms[index].lastMessageTime,
+        lastMessageAt: _chatRooms[index].lastMessageAt,
         unreadCount: 0,
-        isOnline: _chatRooms[index].isOnline,
       );
 
       _chatRooms[index] = updatedRoom;

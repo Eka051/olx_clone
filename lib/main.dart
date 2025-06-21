@@ -2,13 +2,15 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:olx_clone/firebase_options.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/category_provider.dart';
 import 'package:olx_clone/providers/chat_filter_provider.dart';
 import 'package:olx_clone/providers/chat_list_provider.dart';
 import 'package:olx_clone/providers/chat_room_provider.dart';
-import 'package:olx_clone/providers/create_product_provider.dart';
+import 'package:olx_clone/providers/product_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/utils/const.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/views/auth/auth_option.dart';
@@ -18,12 +20,15 @@ import 'package:olx_clone/views/auth/login_email.dart';
 import 'package:olx_clone/views/auth/login_phone.dart';
 import 'package:olx_clone/views/category/category_view.dart';
 import 'package:olx_clone/views/main_screen.dart';
+import 'package:olx_clone/views/product/product_detail_view.dart';
+import 'package:olx_clone/views/product/create_product_view.dart';
 import 'package:olx_clone/views/splashscreen/splashscreen_view.dart';
 import 'package:olx_clone/views/product/select_category_view.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
@@ -44,8 +49,19 @@ void main() async {
           update:
               (context, auth, previous) => previous ?? ChatListProvider(auth),
         ),
-        ChangeNotifierProvider(create: (context) => ChatRoomProvider()),
-        ChangeNotifierProvider(create: (context) => CreateProductProvider()),
+        ChangeNotifierProxyProvider<AuthProviderApp, ChatRoomProvider>(
+          create:
+              (context) => ChatRoomProvider(context.read<AuthProviderApp>()),
+          update: (context, auth, previous) => ChatRoomProvider(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthProviderApp, ProductProvider>(
+          create: (context) => ProductProvider(context.read<AuthProviderApp>()),
+          update: (context, auth, previous) => ProductProvider(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthProviderApp, ProfileProvider>(
+          create: (context) => ProfileProvider(context.read<AuthProviderApp>()),
+          update: (context, auth, previous) => ProfileProvider(auth),
+        ),
       ],
       child: const OlxClone(),
     ),
@@ -75,7 +91,8 @@ class OlxClone extends StatelessWidget {
         AppRoutes.loginEmail: (_) => const LoginEmail(),
         AppRoutes.home: (_) => const MainScreen(),
         AppRoutes.category: (_) => const CategoryView(),
-        '/select-category': (_) => const SelectCategoryView(),
+        AppRoutes.selectCategory: (_) => const SelectCategoryView(),
+        AppRoutes.productDetails: (_) => const ProductDetailView(),
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: (settings) {
@@ -102,6 +119,19 @@ class OlxClone extends StatelessWidget {
             );
           }
         }
+
+        if (settings.name == AppRoutes.createProduct) {
+          final args = settings.arguments as Map<String, dynamic>?;
+          return MaterialPageRoute(
+            builder:
+                (context) => CreateProductView(
+                  isEdit: args?['isEdit'] ?? false,
+                  product: args?['product'],
+                  selectedCategory: args?['selectedCategory'],
+                ),
+          );
+        }
+
         return null;
       },
     );

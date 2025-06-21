@@ -16,10 +16,17 @@ class CategoryProvider with ChangeNotifier {
   bool _hasInitialized = false;
   bool get hasInitialized => _hasInitialized;
 
+  String _searchQuery = '';
+  String get searchQuery => _searchQuery;
+  List<Category> _filteredCategories = [];
+  List<Category> get filteredCategories =>
+      _filteredCategories.isEmpty && _searchQuery.isEmpty
+          ? _categories
+          : _filteredCategories;
+
   CategoryProvider() {
     getCategories();
   }
-
   Future<void> getCategories() async {
     _isLoading = true;
     _hasError = false;
@@ -30,6 +37,7 @@ class CategoryProvider with ChangeNotifier {
       _categories.clear();
       _categories.addAll(response);
       _hasInitialized = true;
+      _filterCategories();
     } catch (e) {
       _hasError = true;
       _errorMessage = e.toString();
@@ -92,7 +100,36 @@ class CategoryProvider with ChangeNotifier {
     _hasError = false;
     _errorMessage = '';
     _hasInitialized = false;
+    clearSearch();
     notifyListeners();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query.toLowerCase();
+    _filterCategories();
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _filteredCategories.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void _filterCategories() {
+    if (_searchQuery.isEmpty) {
+      _filteredCategories.clear();
+    } else {
+      _filteredCategories =
+          _categories
+              .where(
+                (category) =>
+                    category.name.toLowerCase().contains(_searchQuery),
+              )
+              .toList();
+    }
   }
 
   Category? getCategoryById(int id) {
@@ -144,5 +181,26 @@ class CategoryProvider with ChangeNotifier {
     return category != null
         ? getCategoryImagePath(category.name)
         : 'assets/icons/gift.png';
+  }
+
+  bool shouldShowLoadingIndicator() {
+    return isLoading && !hasInitialized;
+  }
+
+  bool shouldShowErrorView() {
+    return hasError && categories.isEmpty;
+  }
+
+  bool shouldShowEmptySearchView() {
+    return filteredCategories.isEmpty && searchQuery.isNotEmpty;
+  }
+
+  void handleSearchClear() {
+    clearSearch();
+    notifyListeners();
+  }
+
+  void retryInitialization() {
+    initializeCategories();
   }
 }

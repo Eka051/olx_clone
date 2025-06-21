@@ -1,41 +1,41 @@
 class ApiMessage {
   final String id;
-  final String content;
-  final String senderId;
   final String chatRoomId;
-  final bool isRead;
+  final String senderId;
+  final String content;
   final DateTime createdAt;
+  final bool isRead;
 
   ApiMessage({
     required this.id,
-    required this.content,
-    required this.senderId,
     required this.chatRoomId,
-    required this.isRead,
+    required this.senderId,
+    required this.content,
     required this.createdAt,
+    required this.isRead,
   });
 
   factory ApiMessage.fromJson(Map<String, dynamic> json) {
     return ApiMessage(
       id: json['id'] ?? '',
-      content: json['content'] ?? '',
-      senderId: json['senderId'] ?? '',
       chatRoomId: json['chatRoomId'] ?? '',
-      isRead: json['isRead'] ?? false,
+      senderId: json['senderId'] ?? '',
+      content: json['content'] ?? '',
       createdAt: DateTime.parse(
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
+      isRead: json['isRead'] ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'content': content,
-      'senderId': senderId,
       'chatRoomId': chatRoomId,
-      'isRead': isRead,
+      'senderId': senderId,
+      'content': content,
       'createdAt': createdAt.toIso8601String(),
+      'isRead': isRead,
     };
   }
 }

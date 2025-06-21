@@ -35,8 +35,10 @@ class AppRoutes {
   static const String myAccount = '/my-account';
 
   static const String category = '/categories';
+  static const String selectCategory = '/select-category';
   static const String categoryDetails = '/category-details';
   static const String addListing = '/add-listing';
+  static const String createProduct = '/create-product';
   static const String productDetails = '/product-details';
   static const String settings = '/settings';
 }

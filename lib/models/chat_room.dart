@@ -1,48 +1,47 @@
 class ChatRoom {
   final String id;
-  final String productId;
+  final int productId;
   final String productTitle;
-  final String productImage;
-  final String productPrice;
-  final String participantId;
-  final String participantName;
-  final String participantAvatar;
-  final String lastMessage;
-  final DateTime lastMessageTime;
+  final String buyerId;
+  final String buyerName;
+  final String sellerId;
+  final String sellerName;
+  final DateTime createdAt;
+  final String? lastMessage;
+  final DateTime? lastMessageAt;
   final int unreadCount;
-  final bool isOnline;
 
   ChatRoom({
     required this.id,
     required this.productId,
     required this.productTitle,
-    required this.productImage,
-    required this.productPrice,
-    required this.participantId,
-    required this.participantName,
-    required this.participantAvatar,
-    required this.lastMessage,
-    required this.lastMessageTime,
+    required this.buyerId,
+    required this.buyerName,
+    required this.sellerId,
+    required this.sellerName,
+    required this.createdAt,
+    this.lastMessage,
+    this.lastMessageAt,
     required this.unreadCount,
-    required this.isOnline,
   });
 
   factory ChatRoom.fromJson(Map<String, dynamic> json) {
     return ChatRoom(
       id: json['id'] ?? '',
-      productId: json['productId'] ?? '',
+      productId: json['productId'] ?? 0,
       productTitle: json['productTitle'] ?? '',
-      productImage: json['productImage'] ?? '',
-      productPrice: json['productPrice'] ?? '',
-      participantId: json['participantId'] ?? '',
-      participantName: json['participantName'] ?? '',
-      participantAvatar: json['participantAvatar'] ?? '',
-      lastMessage: json['lastMessage'] ?? '',
-      lastMessageTime: DateTime.parse(
-        json['lastMessageTime'] ?? DateTime.now().toIso8601String(),
+      buyerId: json['buyerId'] ?? '',
+      buyerName: json['buyerName'] ?? '',
+      sellerId: json['sellerId'] ?? '',
+      sellerName: json['sellerName'] ?? '',
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
+      lastMessage: json['lastMessage'],
+      lastMessageAt: json['lastMessageAt'] != null
+          ? DateTime.parse(json['lastMessageAt'])
+          : null,
       unreadCount: json['unreadCount'] ?? 0,
-      isOnline: json['isOnline'] ?? false,
     );
   }
 
@@ -51,15 +50,14 @@ class ChatRoom {
       'id': id,
       'productId': productId,
       'productTitle': productTitle,
-      'productImage': productImage,
-      'productPrice': productPrice,
-      'participantId': participantId,
-      'participantName': participantName,
-      'participantAvatar': participantAvatar,
+      'buyerId': buyerId,
+      'buyerName': buyerName,
+      'sellerId': sellerId,
+      'sellerName': sellerName,
+      'createdAt': createdAt.toIso8601String(),
       'lastMessage': lastMessage,
-      'lastMessageTime': lastMessageTime.toIso8601String(),
+      'lastMessageAt': lastMessageAt?.toIso8601String(),
       'unreadCount': unreadCount,
-      'isOnline': isOnline,
     };
   }
 }

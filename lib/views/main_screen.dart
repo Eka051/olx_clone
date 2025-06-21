@@ -5,7 +5,9 @@ import 'dart:math' as math;
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/views/home/home_view.dart';
 import 'package:olx_clone/views/chat/chat_view.dart';
+import 'package:olx_clone/views/myAds/my_ads_view.dart';
 import 'package:olx_clone/views/product/select_category_view.dart';
+import 'package:olx_clone/views/profile/profile_view.dart';
 import 'package:olx_clone/views/sell/sell_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -20,11 +22,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   AnimationController? _fabAnimationController;
   Animation<double>? _fabAnimation;
   final List<Widget> _screens = [
-    HomeView(),
+    const HomeView(),
     const ChatView(),
-    SellScreen(),
-    const Center(child: Text('Iklan Saya')),
-    const Center(child: Text('Akun Saya')),
+    const SellScreen(),
+    const MyAdsView(),
+    const ProfileView(),
   ];
 
   void _onItemTapped(int index) {
@@ -134,35 +136,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
             Positioned(
               top: -(clampedNavHeight * 0.6),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SelectCategoryView(),
-                        ),
-                      );
-                    },
-                    child:
-                        _fabAnimation != null
-                            ? ScaleTransition(
-                              scale: _fabAnimation!,
-                              child: _buildFABContainer(),
-                            )
-                            : _buildFABContainer(),
-                  ),
-                  SizedBox(height: clampedNavHeight * 0.15),
-                  Text(
-                    'Jual',
-                    style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                      color: AppTheme.of(context).colors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: MediaQuery.of(context).size.width * 0.028,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  children: [
+                    _fabAnimation != null
+                        ? ScaleTransition(
+                          scale: _fabAnimation!,
+                          child: _buildFABContainer(),
+                        )
+                        : _buildFABContainer(),
+                    Text(
+                      'Jual',
+                      style: AppTheme.of(context).textStyle.bodySmall.copyWith(
+                        color: AppTheme.of(context).colors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: MediaQuery.of(context).size.width * 0.028,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -228,50 +221,51 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildFABContainer() {
-    final fabSize = MediaQuery.of(context).size.width * 0.15;
-    final clampedFabSize = fabSize.clamp(50.0, 70.0);
+    final fabSize = MediaQuery.of(context).size.width * 0.18;
+    final clampedFabSize = fabSize.clamp(60.0, 80.0);
 
-    return Container(
-      height: clampedFabSize,
-      width: clampedFabSize,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            offset: const Offset(0, 8),
-            blurRadius: 16,
-            spreadRadius: 0,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          height: clampedFabSize,
+          width: clampedFabSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(10),
+                offset: const Offset(0, 8),
+                blurRadius: 16,
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: Colors.black.withAlpha(20),
+                offset: const Offset(0, 4),
+                blurRadius: 8,
+                spreadRadius: 0,
+              ),
+            ],
           ),
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            offset: const Offset(0, 4),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: CustomPaint(
-        painter: FullCircleTripleArcPainter(),
-        child: Center(
-          child: Container(
-            height: 50,
-            width: 50,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(Icons.add, size: clampedFabSize * 0.5),
-          ),
+          child: CustomPaint(painter: FullCircleTripleArcPainter()),
         ),
-      ),
+        FloatingActionButton(
+          heroTag: "main_screen_fab",
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SelectCategoryView(),
+              ),
+            );
+          },
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 0,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add, size: 28),
+        ),
+      ],
     );
   }
 }
@@ -281,9 +275,10 @@ class FullCircleTripleArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final strokeWidth = 6.0;
     final radius = size.width / 2;
+    final arcRadius = radius - strokeWidth / 2 - 2.0;
     final arcRect = Rect.fromCircle(
       center: Offset(radius, radius),
-      radius: radius - strokeWidth / 2,
+      radius: arcRadius,
     );
 
     final sweepAngle = 2 * math.pi / 3;

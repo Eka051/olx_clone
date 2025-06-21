@@ -44,6 +44,13 @@ dependencies:
   google_sign_in: ^6.3.0
   firebase_auth: ^5.5.3
   firebase_app_check: ^0.3.2+6
+  image_picker: ^1.1.2
+  google_maps_flutter: ^2.12.3
+  geolocator: ^14.0.1
+  geocoding: ^3.0.0
+  flutter_dotenv: ^5.2.1
+  intl: ^0.20.2
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:
@@ -66,9 +73,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/
     - assets/icons/
     - assets/images/
