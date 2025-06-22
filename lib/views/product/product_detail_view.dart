@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/models/product.dart';
-import 'package:olx_clone/models/chat_room.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/services/chat_service.dart';
 import 'package:olx_clone/views/chat/chat_room_view.dart';
 
@@ -23,9 +23,20 @@ class ProductDetailView extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: const Center(child: Text('Product not found')),
+        body: const Center(child: Text('Produk tidak ditemukan')),
       );
     }
+
+    final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
+    final profileProvider = Provider.of<ProfileProvider>(
+      context,
+      listen: false,
+    );
+    final currentUserId = profileProvider.user?.id;
+    final isSeller =
+        authProvider.isLoggedIn &&
+        currentUserId != null &&
+        (currentUserId == product.sellerId || currentUserId == product.userId);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,6 +45,8 @@ class ProductDetailView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),
@@ -41,7 +54,6 @@ class ProductDetailView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Images
             SizedBox(
               height: 300,
               width: double.infinity,
@@ -88,7 +100,6 @@ class ProductDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 8.0),
 
-                  // Product Price
                   Text(
                     product.formattedPrice,
                     style: AppTheme.of(context).textStyle.titleLarge.copyWith(
@@ -98,7 +109,6 @@ class ProductDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16.0),
 
-                  // Location and Date
                   Row(
                     children: [
                       Icon(
@@ -124,22 +134,31 @@ class ProductDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16.0),
 
-                  // Category
-                  if (product.categoryName.isNotEmpty) ...[
-                    Text(
-                      'Category',
-                      style: AppTheme.of(context).textStyle.titleMedium
-                          .copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      product.categoryName,
-                      style: AppTheme.of(context).textStyle.bodyMedium,
-                    ),
-                    const SizedBox(height: 16.0),
-                  ], // Product Description
+                  const Divider(color: Colors.grey, thickness: 1.0),
+                  const SizedBox(height: 8.0),
+
                   Text(
-                    'Description',
+                    'Penjual: ${product.sellerName}',
+                    style: AppTheme.of(context).textStyle.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+
+                  const Divider(color: Colors.grey, thickness: 1.0),
+                  const SizedBox(height: 16.0),
+
+                  Text(
+                    'ID IKLAN: ${product.id}',
+                    style: AppTheme.of(context).textStyle.titleMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  Divider(color: Colors.grey, thickness: 1.0),
+
+                  Text(
+                    'Deskripsi',
                     style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -148,177 +167,117 @@ class ProductDetailView extends StatelessWidget {
                   Text(
                     product.description.isNotEmpty
                         ? product.description
-                        : 'No description available',
+                        : 'Tidak ada deskripsi',
                     style: AppTheme.of(context).textStyle.bodyMedium,
                   ),
                   const SizedBox(height: 24.0),
-
-                  // Product Details
-                  Text(
-                    'Product Details',
-                    style: AppTheme.of(context).textStyle.titleMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  _buildDetailRow('Product ID', product.id.toString()),
-                  if (product.categoryName.isNotEmpty)
-                    _buildDetailRow('Category', product.categoryName),
-                  _buildDetailRow('Location', product.location),
-                  _buildDetailRow('Posted', product.timePosted),
-                  const SizedBox(height: 24.0),
-
-                  // Status
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          product.status == ProductStatus.active
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color:
-                            product.status == ProductStatus.active
-                                ? Colors.green
-                                : Colors.red,
-                      ),
-                    ),
-                    child: Text(
-                      product.status == ProductStatus.active
-                          ? 'Available'
-                          : 'Sold',
-                      style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                        color:
-                            product.status == ProductStatus.active
-                                ? Colors.green
-                                : Colors.red,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () => _startChat(context, product),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.of(context).colors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+      bottomNavigationBar:
+          isSeller
+              ? null
+              : Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _startChat(context, product),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.of(context).colors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text(
+                        'Chat Penjual',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.chat),
-              label: const Text(
-                'Chat Penjual',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.normal),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   void _startChat(BuildContext context, Product product) async {
-    final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (BuildContext context) =>
+              const Center(child: CircularProgressIndicator()),
+    );
 
-    if (!authProvider.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan login terlebih dahulu untuk mengirim pesan'),
-        ),
+    final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (!authProvider.isLoggedIn || authProvider.currentFirebaseUser == null) {
+      navigator.pop();
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Silakan login untuk memulai chat.')),
       );
-      Navigator.pushNamed(context, '/login');
+      navigator.pushNamed('/login');
       return;
     }
 
     try {
-      final chatRoomData = await ChatService.createChatRoom(
-        product.id,
-        'Halo, saya tertarik dengan produk ini.',
-        authProvider.jwtToken!,
+      // Create or get existing chat room
+      final chatRoom = await ChatService.createChatRoom(
+        productId: product.id.toString(),
+        sellerId: product.sellerId,
+        authToken: authProvider.jwtToken!,
       );
 
-      if (chatRoomData != null) {
-        final chatRoom = ChatRoom(
-          id: chatRoomData['id'] ?? 'temp_id',
-          productId: product.id,
-          productTitle: product.title,
-          buyerId: authProvider.currentFirebaseUser?.uid ?? 'current_user',
-          buyerName:
-              authProvider.currentFirebaseUser?.displayName ?? 'Current User',
-          sellerId: chatRoomData['sellerId'] ?? 'seller_${product.id}',
-          sellerName: chatRoomData['sellerName'] ?? 'Penjual',
-          createdAt: DateTime.now(),
-          unreadCount: 0,
+      navigator.pop();
+
+      if (chatRoom != null) {
+        // Send initial message if this is a new chat
+        final initialMessage =
+            'Halo, saya tertarik dengan iklan "${product.title}". Apakah masih tersedia?';
+        await ChatService.sendMessage(
+          chatRoom.id,
+          initialMessage,
+          authProvider.jwtToken!,
         );
 
-        Navigator.push(
-          context,
+        // Navigate to chat room
+        navigator.push(
           MaterialPageRoute(
             builder:
                 (context) => ChatRoomView(chatRoom: chatRoom, product: product),
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membuat chat room')),
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Gagal memulai chat. Coba lagi.')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      navigator.pop();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
+      );
     }
   }
 }

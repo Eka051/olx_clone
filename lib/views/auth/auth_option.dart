@@ -19,7 +19,6 @@ class AuthOption extends StatefulWidget {
 class _AuthOptionState extends State<AuthOption> {
   @override
   Widget build(BuildContext context) {
-    final authProdiver = Provider.of<AuthProviderApp>(context, listen: false);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(statusBarIconBrightness: Brightness.light),
       child: GestureDetector(
@@ -107,27 +106,60 @@ class _AuthOptionState extends State<AuthOption> {
                               icon: Icons.phone_android_rounded,
                               widthButton: 350,
                             ),
-                            AppFilledButton(
-                              onPressed: () async {
-                                bool isSuccess =
-                                    await authProdiver.signInWithGoogle();
-                                if (isSuccess && mounted) {
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/home',
-                                  );
-                                }
+                            Consumer<AuthProviderApp>(
+                              builder: (context, authProvider, child) {
+                                return AppFilledButton(
+                                  onPressed:
+                                      authProvider.isLoading
+                                          ? null
+                                          : () async {
+                                            final scaffoldMessenger =
+                                                ScaffoldMessenger.of(context);
+                                            final navigator = Navigator.of(
+                                              context,
+                                            );
+
+                                            bool isSuccess =
+                                                await authProvider
+                                                    .signInWithGoogle();
+
+                                            if (mounted) {
+                                              if (isSuccess) {
+                                                navigator.pushReplacementNamed(
+                                                  '/home',
+                                                );
+                                              } else {
+                                                // Show error message if login failed
+                                                final errorMsg =
+                                                    authProvider.errorMessage ??
+                                                    'Login gagal. Coba lagi.';
+                                                scaffoldMessenger.showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(errorMsg),
+                                                    backgroundColor: Colors.red,
+                                                    duration: const Duration(
+                                                      seconds: 4,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                  text:
+                                      authProvider.isLoading
+                                          ? 'Memproses...'
+                                          : 'Login/Daftar dengan Google',
+                                  icon:
+                                      authProvider.isLoading
+                                          ? null
+                                          : FontAwesomeIcons.google,
+                                  widthButton: 350,
+                                );
                               },
-                              text: 'Login/Daftar dengan Google',
-                              icon: FontAwesomeIcons.google,
-                              widthButton: 350,
                             ),
                             AppFilledButton(
                               onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/login-email',
-                                );
+                                Navigator.pushNamed(context, '/login-email');
                               },
                               text: 'Login/Daftar dengan Email',
                               icon: Icons.email_outlined,

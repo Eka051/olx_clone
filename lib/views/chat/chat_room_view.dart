@@ -26,10 +26,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProviderApp>();
       if (authProvider.jwtToken != null) {
-        context.read<ChatRoomProvider>().initializeChatRoom(
-          widget.chatRoom,
-          authProvider.jwtToken!,
-        );
+        context.read<ChatRoomProvider>().initializeChatRoom(widget.chatRoom);
       }
       _scrollToBottom();
     });
@@ -307,10 +304,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 onPressed: () {
                   final authProvider = context.read<AuthProviderApp>();
                   if (authProvider.jwtToken != null) {
-                    chatProvider.fetchMessages(
-                      widget.chatRoom.id,
-                      authProvider.jwtToken!,
-                    );
+                    chatProvider.fetchMessages(widget.chatRoom.id);
                   }
                 },
                 child: const Text('Coba Lagi'),

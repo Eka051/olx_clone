@@ -19,10 +19,11 @@ void main() {
         images: ['https://example.com/image1.jpg'],
         cityName: 'Jakarta',
         provinceName: 'DKI Jakarta',
-        districtName: 'Jakarta Pusat',
+        districtName: 'Central Jakarta',
         createdAt: DateTime.now(),
-        status: ProductStatus.active,
-        isFavorite: false,
+        userId: 'test-user-id',
+        sellerId: 'test-seller-id',
+        sellerName: 'Test Seller',
       );
 
       Product? receivedProduct;

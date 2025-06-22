@@ -1,0 +1,273 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:olx_clone/models/ad_package.dart';
+import 'package:olx_clone/providers/ad_provider.dart';
+
+class AdPackageView extends StatefulWidget {
+  const AdPackageView({super.key});
+
+  @override
+  State<AdPackageView> createState() => _AdPackageViewState();
+}
+
+class _AdPackageViewState extends State<AdPackageView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<AdProvider>();
+      provider.fetchAdPackages();
+      provider.fetchCart();
+    });
+  }
+
+  void _navigateToCart(BuildContext context) {
+    Navigator.pushNamed(context, '/cart');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: const Text(
+          'Paket Iklan',
+          style: TextStyle(
+            color: Color(0xFF002F34),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF002F34),
+        elevation: 1,
+        shadowColor: Colors.grey.withAlpha(20),
+        actions: [
+          Consumer<AdProvider>(
+            builder: (context, provider, child) {
+              return Center(
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Color(0xFF002F34),
+                        size: 26,
+                      ),
+                      onPressed: () => _navigateToCart(context),
+                    ),
+                    if (provider.cartItemCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF5636),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            '${provider.cartItemCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Consumer<AdProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+                child: CircularProgressIndicator(
+              color: Color(0xFF002F34),
+            ));
+          }
+
+          if (provider.errorMessage != null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      provider.errorMessage!,
+                      style: const TextStyle(fontSize: 16, color: Colors.black54),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => provider.fetchAdPackages(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF002F34),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchAdPackages(),
+            color: const Color(0xFF002F34),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: provider.packages.length,
+              itemBuilder: (context, index) {
+                final package = provider.packages[index];
+                return _buildPackageCard(package, provider);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPackageCard(AdPackage package, AdProvider provider) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      shadowColor: Colors.grey.withAlpha(10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              package.name,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF002F34),
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (package.description.isNotEmpty)
+              Text(
+                package.description,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+            const SizedBox(height: 16),
+            if (package.features.isNotEmpty) ...[
+              ...package.features.map(
+                (feature) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check,
+                        size: 18,
+                        color: Color(0xFF00A49F),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          feature.featureType,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF002F34),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Rp ${_formatPrice(package.price)}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF002F34),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await provider.addToCart(package);
+                    if (!mounted) return;
+                    
+                    if (provider.errorMessage == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${package.name} ditambahkan',
+                          ),
+                          backgroundColor: const Color(0xFF00A49F),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(provider.errorMessage!),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3A77FF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'Pilih',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatPrice(int price) {
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: '',
+      decimalDigits: 0,
+    );
+    return formatter.format(price);
+  }
+}

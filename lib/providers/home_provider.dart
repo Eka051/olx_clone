@@ -6,8 +6,9 @@ import 'package:olx_clone/services/google_geocoding_service.dart';
 class HomeProvider extends ChangeNotifier {
   String _searchQuery = '';
   bool _isSearching = false;
-  final String _baseUrl = 'https://olx-api.azurewebsites.net';
+  final String _baseUrl = 'https://olx-api-production.up.railway.app';
   String _selectedLocation = 'Mendapatkan lokasi...';
+  bool _disposed = false;
 
   final List<String> _bannerImages = [
     'assets/images/KV-SUPER-DEALS.png',
@@ -20,24 +21,42 @@ class HomeProvider extends ChangeNotifier {
   bool get isSearching => _isSearching;
   String get selectedLocation => _selectedLocation;
   List<String> get bannerImages => _bannerImages;
+  bool get disposed => _disposed;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
 
   void updateSearchQuery(String query) {
+    if (_disposed) return;
     _searchQuery = query;
     notifyListeners();
   }
 
   void toggleSearch() {
+    if (_disposed) return;
     _isSearching = !_isSearching;
     notifyListeners();
   }
 
   void clearSearch() {
+    if (_disposed) return;
     _searchQuery = '';
     _isSearching = false;
     notifyListeners();
   }
 
   void updateLocation(String location) {
+    if (_disposed) return;
     _selectedLocation = location;
     notifyListeners();
   }
@@ -55,6 +74,8 @@ class HomeProvider extends ChangeNotifier {
   }
 
   Future<void> getAllProduct() async {
+    if (_disposed) return;
+
     try {
       final url = Uri.parse('$_baseUrl/api/products');
       final response = await http.get(
@@ -65,26 +86,29 @@ class HomeProvider extends ChangeNotifier {
         },
       );
 
+      if (_disposed) return;
+
       if (response.statusCode == 200) {
         notifyListeners();
       } else {
         throw Exception('Failed to load products: ${response.statusCode}');
       }
-    } catch (e) {
-      // Handle error
-    }
+    } catch (e) {}
   }
 
   HomeProvider() {
     _getCurrentLocation();
   }
-
   Future<void> _getCurrentLocation() async {
+    if (_disposed) return;
+
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _selectedLocation = 'Layanan lokasi tidak aktif';
-        notifyListeners();
+        if (!_disposed) {
+          _selectedLocation = 'Layanan lokasi tidak aktif';
+          notifyListeners();
+        }
         return;
       }
 
@@ -92,15 +116,19 @@ class HomeProvider extends ChangeNotifier {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _selectedLocation = 'Izin lokasi ditolak';
-          notifyListeners();
+          if (!_disposed) {
+            _selectedLocation = 'Izin lokasi ditolak';
+            notifyListeners();
+          }
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _selectedLocation = 'Izin lokasi ditolak permanen';
-        notifyListeners();
+        if (!_disposed) {
+          _selectedLocation = 'Izin lokasi ditolak permanen';
+          notifyListeners();
+        }
         return;
       }
 
@@ -110,10 +138,14 @@ class HomeProvider extends ChangeNotifier {
         ),
       );
 
+      if (_disposed) return;
+
       final result = await GoogleGeocodingService.getAddressFromCoordinates(
         position.latitude,
         position.longitude,
       );
+
+      if (_disposed) return;
 
       if (result != null) {
         _selectedLocation = '${result['district']}, ${result['city']}';
@@ -122,8 +154,10 @@ class HomeProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      _selectedLocation = 'Gagal mendapatkan lokasi';
-      notifyListeners();
+      if (!_disposed) {
+        _selectedLocation = 'Gagal mendapatkan lokasi';
+        notifyListeners();
+      }
     }
   }
 }

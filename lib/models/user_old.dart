@@ -1,13 +1,13 @@
 enum ProfileType {
-  regular('Regular'),
-  premium('Premium');
+  regular(0),
+  premium(1);
 
   const ProfileType(this.value);
-  final String value;
+  final int value;
 
-  static ProfileType fromValue(String? value) {
-    switch (value?.toLowerCase()) {
-      case 'premium':
+  static ProfileType fromValue(int value) {
+    switch (value) {
+      case 1:
         return ProfileType.premium;
       default:
         return ProfileType.regular;
@@ -24,7 +24,6 @@ class User {
   final DateTime createdAt;
   final int totalAds;
   final ProfileType profileType;
-
   User({
     required this.id,
     required this.name,
@@ -33,8 +32,8 @@ class User {
     this.profilePictureUrl,
     required this.createdAt,
     this.totalAds = 0,
-    this.profileType = ProfileType.regular,
-  });
+    ProfileType? profileType,
+  }) : profileType = profileType ?? ProfileType.regular;
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] ?? '',
@@ -46,10 +45,9 @@ class User {
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
       totalAds: json['totalAds'] ?? 0,
-      profileType: ProfileType.fromValue(json['profileType']),
+      profileType: ProfileType.fromValue(json['profileType'] ?? 0),
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -64,29 +62,4 @@ class User {
   }
 
   bool get isPremium => profileType == ProfileType.premium;
-
-  String get profileTypeString => profileType.value;
-
-  // Create a copy with updated profile type
-  User copyWith({
-    String? id,
-    String? name,
-    String? email,
-    String? phoneNumber,
-    String? profilePictureUrl,
-    DateTime? createdAt,
-    int? totalAds,
-    ProfileType? profileType,
-  }) {
-    return User(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
-      createdAt: createdAt ?? this.createdAt,
-      totalAds: totalAds ?? this.totalAds,
-      profileType: profileType ?? this.profileType,
-    );
-  }
 }

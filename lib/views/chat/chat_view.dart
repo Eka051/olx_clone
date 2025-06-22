@@ -29,7 +29,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
         Provider.of<ChatListProvider>(
           context,
           listen: false,
-        ).initializeChatList();
+        ).initializeChatSystem();
       }
     });
   }
@@ -70,7 +70,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                   Icon(
                     Icons.lock_outline,
                     size: 64,
-                    color: colorScheme.onSurface.withOpacity(0.5),
+                    color: colorScheme.onSurface.withAlpha(120),
                   ),
                   const SizedBox(height: 16),
                   Text('Login Required', style: theme.textTheme.titleMedium),
@@ -78,7 +78,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                   Text(
                     'Please login to view your chats',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withAlpha(120),
                     ),
                     textAlign: TextAlign.center,
                   ),

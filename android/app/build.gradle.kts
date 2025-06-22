@@ -45,13 +45,19 @@ android {
         versionName = flutter.versionName
         
         // Inject the Google Maps API key into the manifest
-        manifestPlaceholders["GMAPS_API_KEY"] = gmapsApiKey
+        manifestPlaceholders["GMAPS_API_KEY"] = gmapsApiKey    }
+    
+    buildFeatures {
+        buildConfig = true
     }
-
+    
     buildTypes {
+        debug {
+            buildConfigField("Boolean", "DEBUG_MODE", "true")
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            buildConfigField("Boolean", "DEBUG_MODE", "false")
             signingConfig = signingConfigs.getByName("debug")
         }
     }

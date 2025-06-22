@@ -32,6 +32,8 @@ class _AutoCarouselWidgetState extends State<AutoCarouselWidget> {
 
   void _startAutoSlide() {
     _timer = Timer.periodic(widget.autoSlideDuration, (timer) {
+      if (!mounted) return;
+
       if (_currentPage < widget.bannerImages.length - 1) {
         _currentPage++;
       } else {
@@ -67,9 +69,11 @@ class _AutoCarouselWidgetState extends State<AutoCarouselWidget> {
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  }
                 },
                 itemCount: widget.bannerImages.length,
                 itemBuilder: (context, index) {

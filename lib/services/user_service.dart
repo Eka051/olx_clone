@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class UserService {
-  static const String baseUrl = 'https://olx-api.azurewebsites.net/api';
+  static const String baseUrl = 'https://olx-api-production.up.railway.app/api';
 
   static Future<Map<String, dynamic>?> getUserById(
     String userId,

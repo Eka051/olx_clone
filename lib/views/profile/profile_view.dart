@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:olx_clone/utils/const.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
@@ -25,11 +26,27 @@ class _ProfileViewState extends State<ProfileView> {
     return Scaffold(
       backgroundColor: AppTheme.of(context).colors.background,
       appBar: AppBar(
-        title: const Text('Profil'),
-        centerTitle: true,
-        backgroundColor: AppTheme.of(context).colors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppTheme.of(context).colors.background,
+        elevation: 1,
+        surfaceTintColor: Colors.transparent,
+        title: SizedBox(
+          height: 40,
+          child: Image.asset(
+            'assets/images/OLX-LOGO-BLUE.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Text(
+                'OLX Clone',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: Colors.blue,
+                ),
+              );
+            },
+          ),
+        ),
+        centerTitle: false,
       ),
       body: Consumer2<ProfileProvider, AuthProviderApp>(
         builder: (context, profileProvider, authProvider, child) {
@@ -42,49 +59,59 @@ class _ProfileViewState extends State<ProfileView> {
           }
 
           if (profileProvider.error != null) {
+            if (profileProvider.error!.contains('401') ||
+                profileProvider.error!.toLowerCase().contains('unauthorized')) {
+              return _build401ErrorView(context, authProvider);
+            }
+
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Terjadi Kesalahan',
-                    style: AppTheme.of(context).textStyle.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    profileProvider.error!,
-                    style: AppTheme.of(
-                      context,
-                    ).textStyle.bodyMedium.copyWith(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => profileProvider.fetchUserProfile(),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Terjadi Kesalahan',
+                      style: AppTheme.of(context).textStyle.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      profileProvider.error!,
+                      style: AppTheme.of(
+                        context,
+                      ).textStyle.bodyMedium.copyWith(color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => profileProvider.fetchUserProfile(),
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
-
           final user = profileProvider.user;
-          if (user == null) {
-            return const Center(child: Text('Data profil tidak ditemukan'));
-          }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildProfileHeader(context, user),
-                const SizedBox(height: 24),
-                _buildProfileStats(context, user),
-                const SizedBox(height: 24),
-                _buildMenuList(context, authProvider),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildProfileHeader(context, user),
+                  const SizedBox(height: 24),
+                  _buildEditProfileButton(context),
+                  const SizedBox(height: 24),
+                  _buildMenuList(context, authProvider),
+                ],
+              ),
             ),
           );
         },
@@ -92,126 +119,257 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, user) {
+  Widget _build401ErrorView(
+    BuildContext context,
+    AuthProviderApp authProvider,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: AppTheme.of(
-              context,
-            ).colors.primary.withValues(alpha: 0.1),
-            backgroundImage:
-                user.profilePictureUrl != null
-                    ? NetworkImage(user.profilePictureUrl!)
-                    : null,
-            child:
-                user.profilePictureUrl == null
-                    ? Icon(
-                      Icons.person,
-                      size: 50,
-                      color: AppTheme.of(context).colors.primary,
-                    )
-                    : null,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            user.name,
-            style: AppTheme.of(
-              context,
-            ).textStyle.titleLarge.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            user.email,
-            style: AppTheme.of(
-              context,
-            ).textStyle.bodyMedium.copyWith(color: Colors.grey[600]),
-          ),
-          if (user.phoneNumber != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              user.phoneNumber!,
-              style: AppTheme.of(
-                context,
-              ).textStyle.bodyMedium.copyWith(color: Colors.grey[600]),
-            ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.of(context).colors.primary.withAlpha(30),
+            Colors.white,
           ],
-        ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 80,
+                  color: Colors.orange[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Sesi Berakhir',
+                style: AppTheme.of(context).textStyle.headlineMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan menggunakan aplikasi.',
+                style: AppTheme.of(context).textStyle.bodyLarge.copyWith(
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.of(context).colors.primary,
+                      AppTheme.of(context).colors.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.of(
+                        context,
+                      ).colors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await authProvider.logout();
+                    if (mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/auth-option',
+                        (route) => false,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.login, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Masuk Kembali',
+                        style: AppTheme.of(
+                          context,
+                        ).textStyle.titleMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed:
+                    () => context.read<ProfileProvider>().fetchUserProfile(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.refresh,
+                      size: 18,
+                      color: AppTheme.of(context).colors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Coba Lagi',
+                      style: TextStyle(
+                        color: AppTheme.of(context).colors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildProfileStats(BuildContext context, user) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  '${user.totalAds}',
-                  style: AppTheme.of(context).textStyle.titleLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.of(context).colors.primary,
+  Widget _buildProfileHeader(BuildContext context, user) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: AppTheme.of(context).colors.primary.withAlpha(25),
+          backgroundImage:
+              (user?.profilePictureUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(user!.profilePictureUrl!)
+                  : null,
+          child:
+              (user?.profilePictureUrl?.isNotEmpty ?? false) == false
+                  ? Text(
+                    (user?.name?.isNotEmpty ?? false)
+                        ? user!.name[0].toUpperCase()
+                        : 'U',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.of(context).colors.primary,
+                    ),
+                  )
+                  : null,
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      user?.name ?? 'Pengguna',
+                      style: AppTheme.of(context).textStyle.headlineSmall
+                          .copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Total Iklan',
-                  style: AppTheme.of(
-                    context,
-                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
-                ),
-              ],
-            ),
+                  if (user?.isPremium == true) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3A77FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.star, color: Colors.white, size: 12),
+                          SizedBox(width: 2),
+                          Text(
+                            'Premium',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                user?.email ?? 'Email tidak tersedia',
+                style: AppTheme.of(
+                  context,
+                ).textStyle.bodyMedium.copyWith(color: Colors.grey[600]),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          Container(width: 1, height: 40, color: Colors.grey[300]),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  _getJoinDuration(user.createdAt),
-                  style: AppTheme.of(context).textStyle.titleLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.of(context).colors.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Bergabung',
-                  style: AppTheme.of(
-                    context,
-                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
-                ),
-              ],
-            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditProfileButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          final profileProvider = context.read<ProfileProvider>();
+          final result = await Navigator.pushNamed(
+            context,
+            AppRoutes.editProfile,
+          );
+          if (result == true && mounted) {
+            await profileProvider.fetchUserProfile();
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.of(context).colors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 2,
+        ),
+        child: Text(
+          'Lihat dan edit profil',
+          style: AppTheme.of(context).textStyle.titleMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -219,44 +377,22 @@ class _ProfileViewState extends State<ProfileView> {
   Widget _buildMenuList(BuildContext context, AuthProviderApp authProvider) {
     final menuItems = [
       {
-        'icon': Icons.edit,
-        'title': 'Edit Profil',
-        'onTap': () => _showEditProfileDialog(context),
+        'icon': Icons.card_giftcard_outlined,
+        'title': 'Paket Iklan',
+        'onTap': () {
+          Navigator.pushNamed(context, AppRoutes.adPackages);
+        },
       },
       {
-        'icon': Icons.inventory_2_outlined,
-        'title': 'Iklan Saya',
-        'onTap': () => Navigator.pushNamed(context, '/my_ads'),
-      },
-      {
-        'icon': Icons.favorite_outline,
-        'title': 'Favorit',
-        'onTap': () => Navigator.pushNamed(context, '/favorites'),
-      },
-      {
-        'icon': Icons.history,
-        'title': 'Riwayat Transaksi',
-        'onTap': () => Navigator.pushNamed(context, '/transaction_history'),
-      },
-      {
-        'icon': Icons.settings,
-        'title': 'Pengaturan',
-        'onTap': () => Navigator.pushNamed(context, '/settings'),
-      },
-      {
-        'icon': Icons.help_outline,
-        'title': 'Bantuan',
-        'onTap': () => Navigator.pushNamed(context, '/help'),
-      },
-      {
-        'icon': Icons.info_outline,
-        'title': 'Tentang Aplikasi',
-        'onTap': () => Navigator.pushNamed(context, '/about'),
+        'icon': Icons.star_border_outlined,
+        'title': 'Program Penjual',
+        'onTap': () {
+          Navigator.pushNamed(context, AppRoutes.premiumPackages);
+        },
       },
       {
         'icon': Icons.logout,
-        'title': 'Keluar',
-        'isDestructive': true,
+        'title': 'Logout',
         'onTap': () => _showLogoutDialog(context, authProvider),
       },
     ];
@@ -264,134 +400,36 @@ class _ProfileViewState extends State<ProfileView> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: menuItems.length,
         separatorBuilder:
-            (context, index) => Divider(height: 1, color: Colors.grey[200]),
+            (context, index) => Divider(
+              height: 1,
+              color: Colors.grey[200],
+              indent: 16,
+              endIndent: 16,
+            ),
         itemBuilder: (context, index) {
           final item = menuItems[index];
-          final isDestructive = item['isDestructive'] as bool? ?? false;
-
           return ListTile(
-            leading: Icon(
-              item['icon'] as IconData,
-              color:
-                  isDestructive
-                      ? Colors.red[600]
-                      : AppTheme.of(context).colors.primary,
-            ),
+            leading: Icon(item['icon'] as IconData, color: Colors.grey[800]),
             title: Text(
               item['title'] as String,
-              style: AppTheme.of(context).textStyle.bodyLarge.copyWith(
-                color: isDestructive ? Colors.red[600] : null,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTheme.of(context).textStyle.bodyLarge,
             ),
             trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
             onTap: item['onTap'] as VoidCallback,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
           );
         },
       ),
-    );
-  }
-
-  String _getJoinDuration(DateTime createdAt) {
-    final now = DateTime.now();
-    final difference = now.difference(createdAt);
-
-    if (difference.inDays >= 365) {
-      return '${(difference.inDays / 365).floor()}th';
-    } else if (difference.inDays >= 30) {
-      return '${(difference.inDays / 30).floor()}bln';
-    } else {
-      return '${difference.inDays}hr';
-    }
-  }
-
-  void _showEditProfileDialog(BuildContext context) {
-    final profileProvider = context.read<ProfileProvider>();
-    final user = profileProvider.user;
-    if (user == null) return;
-
-    final nameController = TextEditingController(text: user.name);
-    final phoneController = TextEditingController(text: user.phoneNumber ?? '');
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Edit Profil'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nomor Telepon',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final newName = nameController.text.trim();
-                  final newPhone = phoneController.text.trim();
-
-                  if (newName.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Nama tidak boleh kosong')),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context);
-                  await profileProvider.updateProfile(
-                    name: newName != user.name ? newName : null,
-                    phoneNumber: newPhone != user.phoneNumber ? newPhone : null,
-                  );
-
-                  if (profileProvider.error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(profileProvider.error!)),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profil berhasil diperbarui'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Simpan'),
-              ),
-            ],
-          ),
     );
   }
 
@@ -399,36 +437,53 @@ class _ProfileViewState extends State<ProfileView> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Keluar'),
+          (dialogContext) => AlertDialog(
+            title: const Text('Logout'),
             content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Batal'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.pop(context);
-                  await authProvider.logout();
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-                  if (authProvider.errorMessage != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(authProvider.errorMessage!)),
-                    );
-                  } else {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/login',
-                      (route) => false,
-                    );
+                  Navigator.pop(dialogContext);
+
+                  try {
+                    await authProvider.logout();
+
+                    await Future.delayed(const Duration(milliseconds: 100));
+
+                    if (mounted) {
+                      if (authProvider.errorMessage != null) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(content: Text(authProvider.errorMessage!)),
+                        );
+                      } else {
+                        navigator.pushNamedAndRemoveUntil(
+                          '/auth-option',
+                          (route) => false,
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Gagal logout: ${e.toString()}'),
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Keluar'),
+                child: const Text('Logout'),
               ),
             ],
           ),

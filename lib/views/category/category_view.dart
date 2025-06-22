@@ -128,10 +128,13 @@ class CategoryView extends StatelessWidget {
                       color: Colors.grey[400],
                     ),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Kategori ${category.name} dipilih'),
-                        ),
+                      Navigator.pushNamed(
+                        context,
+                        '/category-products',
+                        arguments: {
+                          'categoryId': category.id,
+                          'categoryName': category.name,
+                        },
                       );
                     },
                   );

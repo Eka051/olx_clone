@@ -24,10 +24,13 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   Future<void> _fetchProducts() async {
     final productProvider = context.read<ProductProvider>();
     final products = await productProvider.getUserProducts(isMyAds: false);
-    setState(() {
-      _products = products;
-      _isLoading = false;
-    });
+
+    if (mounted) {
+      setState(() {
+        _products = products;
+        _isLoading = false;
+      });
+    }
   }
 
   @override

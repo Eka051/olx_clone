@@ -788,7 +788,7 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             backgroundColor: AppTheme.of(context).colors.background,
             title: const Text('Nonaktifkan Iklan'),
             content: const Text(
@@ -796,16 +796,18 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Batal'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.pop(context);
-                  if (_productProvider == null) return;
-
+                  final navigator = Navigator.of(context);
                   final messenger = ScaffoldMessenger.of(context);
-                  final success = await _productProvider!.deactivateProduct(
+                  final productProvider = context.read<ProductProvider>();
+
+                  navigator.pop();
+
+                  final success = await productProvider.deactivateProduct(
                     product.id,
                   );
 
@@ -843,7 +845,7 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             backgroundColor: AppTheme.of(context).colors.background,
             title: const Text('Hapus Iklan'),
             content: const Text(
@@ -851,16 +853,18 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Batal'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.pop(context);
-                  if (_productProvider == null) return;
-
+                  final navigator = Navigator.of(context);
                   final messenger = ScaffoldMessenger.of(context);
-                  final success = await _productProvider!.deleteProduct(
+                  final productProvider = context.read<ProductProvider>();
+
+                  navigator.pop();
+
+                  final success = await productProvider.deleteProduct(
                     product.id,
                   );
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import 'dart:math' as math;
 
 import 'package:olx_clone/utils/theme.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/views/home/home_view.dart';
 import 'package:olx_clone/views/chat/chat_view.dart';
 import 'package:olx_clone/views/myAds/my_ads_view.dart';
@@ -11,7 +13,9 @@ import 'package:olx_clone/views/profile/profile_view.dart';
 import 'package:olx_clone/views/sell/sell_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int? initialTab;
+
+  const MainScreen({super.key, this.initialTab});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -38,6 +42,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTab ?? 0;
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -48,6 +53,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         curve: Curves.easeInOut,
       ),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profileProvider = context.read<ProfileProvider>();
+      if (profileProvider.user == null) {
+        profileProvider.fetchUserProfile();
+      }
+    });
   }
 
   @override

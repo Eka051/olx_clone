@@ -21,8 +21,9 @@ void main() {
           provinceName: 'DKI Jakarta',
           districtName: 'Jakarta Pusat',
           createdAt: DateTime.now(),
-          status: ProductStatus.active,
-          isFavorite: false,
+          userId: 'test-user-id',
+          sellerId: 'test-seller-id',
+          sellerName: 'Test Seller',
         );
 
         // Build the ProductDetailView with the test product as argument

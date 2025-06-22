@@ -14,6 +14,9 @@ class Product {
   final DateTime createdAt;
   final ProductStatus status;
   final bool isFavorite;
+  final String userId;
+  final String sellerId;
+  final String sellerName;
 
   Product({
     required this.id,
@@ -29,15 +32,19 @@ class Product {
     required this.createdAt,
     this.status = ProductStatus.active,
     this.isFavorite = false,
+    required this.userId,
+    required this.sellerId,
+    required this.sellerName,
   });
+
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       price: json['price'] ?? 0,
-      categoryId: json['CategoryId'] ?? json['categoryId'] ?? 0,
-      categoryName: json['CategoryName'] ?? json['categoryName'] ?? '',
+      categoryId: json['categoryId'] ?? 0,
+      categoryName: json['categoryName'] ?? '',
       images: List<String>.from(json['images'] ?? []),
       cityName: json['cityName'] ?? '',
       provinceName: json['provinceName'] ?? '',
@@ -48,6 +55,9 @@ class Product {
       status:
           (json['isSold'] ?? false) ? ProductStatus.sold : ProductStatus.active,
       isFavorite: json['isFavorite'] ?? false,
+      userId: json['userId'] ?? '',
+      sellerId: json['sellerId'] ?? '',
+      sellerName: json['sellerName'] ?? '',
     );
   }
 
@@ -66,6 +76,9 @@ class Product {
       'createdAt': createdAt.toIso8601String(),
       'isSold': status == ProductStatus.sold,
       'isFavorite': isFavorite,
+      'userId': userId,
+      'sellerId': sellerId,
+      'sellerName': sellerName,
     };
   }
 

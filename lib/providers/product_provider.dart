@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -10,17 +9,20 @@ import 'package:olx_clone/models/category.dart' as model;
 import 'package:olx_clone/models/product.dart';
 import 'package:olx_clone/services/google_geocoding_service.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 
 class ProductProvider extends ChangeNotifier {
   final AuthProviderApp _authProvider;
+  final ProfileProvider _profileProvider;
 
-  ProductProvider(this._authProvider);
+  ProductProvider(this._authProvider, this._profileProvider);
 
   int _currentStep = 0;
   final List<File> _images = [];
   List<String> _originalImages = [];
   bool _isEdit = false;
   int? _editProductId;
+  String? productId;
   String _title = '';
   String _description = '';
   double _price = 0.0;
@@ -37,11 +39,12 @@ class ProductProvider extends ChangeNotifier {
   bool _isSold = false;
   final bool _isActive = true;
   bool _shouldRefreshMyAds = false;
+  String? _lastError;
 
   Set<int> _favoriteProductIds = {};
 
   final ImagePicker _imagePicker = ImagePicker();
-  final String _apiBaseUrl = 'https://olx-api.azurewebsites.net/api';
+  final String _apiBaseUrl = 'https://olx-api-production.up.railway.app/api';
 
   int get currentStep => _currentStep;
   List<File> get images => _images;
@@ -63,6 +66,15 @@ class ProductProvider extends ChangeNotifier {
   bool get isLoadingLocation => _isLoadingLocation;
   bool get shouldRefreshMyAds => _shouldRefreshMyAds;
   Set<int> get favoriteProductIds => _favoriteProductIds;
+  String? get lastError => _lastError;
+
+  String? get currentUserId => _profileProvider.user?.id;
+
+  bool isCurrentUserOwner(Product product) {
+    final currentUserId = _profileProvider.user?.id;
+    if (currentUserId == null) return false;
+    return currentUserId == product.sellerId || currentUserId == product.userId;
+  }
 
   void nextStep() {
     if (_currentStep < 2) {
@@ -130,6 +142,19 @@ class ProductProvider extends ChangeNotifier {
     return null;
   }
 
+  String? validateAllSteps() {
+    String? step1Error = validateStep1();
+    if (step1Error != null) return 'Step 1: $step1Error';
+
+    String? step2Error = validateStep2();
+    if (step2Error != null) return 'Step 2: $step2Error';
+
+    String? step3Error = validateStep3();
+    if (step3Error != null) return 'Step 3: $step3Error';
+
+    return null;
+  }
+
   bool isStep1Valid() {
     return validateStep1() == null;
   }
@@ -150,7 +175,7 @@ class ProductProvider extends ChangeNotifier {
       source: source,
       maxWidth: 1024,
       maxHeight: 1024,
-      imageQuality: 85,
+      imageQuality: 100,
     );
 
     if (pickedFile != null) {
@@ -272,7 +297,6 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Setter methods for product data
   void setTitle(String title) {
     _title = title;
     notifyListeners();
@@ -351,7 +375,11 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<bool> submitProduct() async {
-    if (!isStep1Valid() || !isStep2Valid() || !isStep3Valid()) {
+    _lastError = null;
+
+    String? validationError = validateAllSteps();
+    if (validationError != null) {
+      _lastError = validationError;
       return false;
     }
 
@@ -361,6 +389,7 @@ class ProductProvider extends ChangeNotifier {
     try {
       final token = _authProvider.jwtToken;
       if (token == null) {
+        _lastError = 'Token autentikasi tidak ditemukan';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -372,6 +401,7 @@ class ProductProvider extends ChangeNotifier {
         return await _createNewProduct(token);
       }
     } catch (e) {
+      _lastError = 'Error submit product: ${e.toString()}';
       return false;
     } finally {
       _isLoading = false;
@@ -380,74 +410,89 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<bool> _createNewProduct(String token) async {
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$_apiBaseUrl/products'),
-    );
-
-    request.headers['Authorization'] = 'Bearer $token';
-
-    request.fields['Title'] = _title;
-    request.fields['Description'] = _description;
-    request.fields['Price'] = _price.toInt().toString();
-    request.fields['CategoryId'] = _category!.id.toString();
-    request.fields['Latitude'] = _latitude!.toString();
-    request.fields['Longitude'] = _longitude!.toString();
-
-    for (var imageFile in _images) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'Images',
-          imageFile.path,
-          contentType: MediaType('image', 'jpeg'),
-        ),
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_apiBaseUrl/products'),
       );
+
+      request.headers['Authorization'] = 'Bearer $token';
+
+      request.fields['Title'] = _title;
+      request.fields['Description'] = _description;
+      request.fields['Price'] = _price.toInt().toString();
+      request.fields['CategoryId'] = _category!.id.toString();
+      request.fields['Latitude'] = _latitude!.toString();
+      request.fields['Longitude'] = _longitude!.toString();
+      for (var imageFile in _images) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'Images',
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        _lastError = 'HTTP ${response.statusCode}: ${response.body}';
+        return false;
+      }
+    } catch (e) {
+      _lastError = 'Error creating product: ${e.toString()}';
+      return false;
     }
-
-    var streamedResponse = await request.send();
-    var response = await http.Response.fromStream(streamedResponse);
-
-    return response.statusCode == 201;
   }
 
   Future<bool> _updateExistingProduct(String token) async {
-    if (_category == null) {
-      return false;
-    }
-
-    var request = http.MultipartRequest(
-      'PUT',
-      Uri.parse('$_apiBaseUrl/products/$_editProductId'),
-    );
-
-    request.headers['Authorization'] = 'Bearer $token';
-
-    request.fields['Title'] = _title;
-    request.fields['Description'] = _description;
-    request.fields['Price'] = _price.toInt().toString();
-    request.fields['CategoryId'] = _category!.id.toString();
-
-    if (_latitude != null && _longitude != null) {
-      request.fields['Latitude'] = _latitude!.toString();
-      request.fields['Longitude'] = _longitude!.toString();
-    }
-
-    for (var imageFile in _images) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'Images',
-          imageFile.path,
-          contentType: MediaType('image', 'jpeg'),
-        ),
+    try {
+      if (_category == null) {
+        _lastError = 'Kategori tidak boleh kosong';
+        return false;
+      }
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$_apiBaseUrl/products/$_editProductId'),
       );
-    }
 
-    var streamedResponse = await request.send();
-    var response = await http.Response.fromStream(streamedResponse);
+      request.headers['Authorization'] = 'Bearer $token';
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
+      request.fields['Title'] = _title;
+      request.fields['Description'] = _description;
+      request.fields['Price'] = _price.toInt().toString();
+      request.fields['CategoryId'] = _category!.id.toString();
+
+      if (_latitude != null && _longitude != null) {
+        request.fields['Latitude'] = _latitude!.toString();
+        request.fields['Longitude'] = _longitude!.toString();
+      }
+
+      for (var imageFile in _images) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'Images',
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        _lastError = 'HTTP ${response.statusCode}: ${response.body}';
+        return false;
+      }
+    } catch (e) {
+      _lastError = 'Error updating product: ${e.toString()}';
       return false;
     }
   }
@@ -469,6 +514,7 @@ class ProductProvider extends ChangeNotifier {
     _city = '';
     _province = '';
     _favoriteProductIds.clear();
+    _lastError = null;
     notifyListeners();
   }
 
@@ -525,7 +571,6 @@ class ProductProvider extends ChangeNotifier {
         'Authorization': 'Bearer $token',
       },
     );
-
     if (response.statusCode == 200) {
       _isSold = true;
       notifyListeners();
@@ -763,17 +808,19 @@ class ProductProvider extends ChangeNotifier {
           ),
         );
         reset();
-
         refreshMyAdsData();
 
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+          arguments: {'initialTab': 3},
+        );
         return true;
       } else if (context.mounted) {
+        String errorMessage =
+            _lastError ?? 'Gagal menyimpan iklan. Silakan coba lagi.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan iklan. Silakan coba lagi.'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
       return success;

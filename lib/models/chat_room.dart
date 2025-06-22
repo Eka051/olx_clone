@@ -60,4 +60,32 @@ class ChatRoom {
       'unreadCount': unreadCount,
     };
   }
+
+  ChatRoom copyWith({
+    String? id,
+    int? productId,
+    String? productTitle,
+    String? buyerId,
+    String? buyerName,
+    String? sellerId,
+    String? sellerName,
+    DateTime? createdAt,
+    String? lastMessage,
+    DateTime? lastMessageAt,
+    int? unreadCount,
+  }) {
+    return ChatRoom(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      productTitle: productTitle ?? this.productTitle,
+      buyerId: buyerId ?? this.buyerId,
+      buyerName: buyerName ?? this.buyerName,
+      sellerId: sellerId ?? this.sellerId,
+      sellerName: sellerName ?? this.sellerName,
+      createdAt: createdAt ?? this.createdAt,
+      lastMessage: lastMessage ?? this.lastMessage,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
+  }
 }
