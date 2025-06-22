@@ -93,9 +93,8 @@ class _AdPackageViewState extends State<AdPackageView> {
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return const Center(
-                child: CircularProgressIndicator(
-              color: Color(0xFF002F34),
-            ));
+              child: CircularProgressIndicator(color: Color(0xFF002F34)),
+            );
           }
 
           if (provider.errorMessage != null) {
@@ -105,12 +104,18 @@ class _AdPackageViewState extends State<AdPackageView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 64, color: Colors.grey[400]),
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       provider.errorMessage!,
-                      style: const TextStyle(fontSize: 16, color: Colors.black54),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -146,11 +151,13 @@ class _AdPackageViewState extends State<AdPackageView> {
   }
 
   Widget _buildPackageCard(AdPackage package, AdProvider provider) {
-    return Card(
-      elevation: 2,
+    final titleParts = package.name.split('+').map((e) => e.trim()).toList();
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shadowColor: Colors.grey.withAlpha(10),
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -158,24 +165,49 @@ class _AdPackageViewState extends State<AdPackageView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              package.name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF002F34),
-              ),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (int i = 0; i < titleParts.length; i++) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[300],
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      titleParts[i],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  if (i < titleParts.length - 1)
+                    const Text(
+                      ' + ',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.normal,
+                        color: Color(0xFF002F34),
+                      ),
+                    ),
+                ],
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             if (package.description.isNotEmpty)
               Text(
                 package.description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
-            const SizedBox(height: 16),
+            if (package.description.isNotEmpty) const SizedBox(height: 16),
             if (package.features.isNotEmpty) ...[
               ...package.features.map(
                 (feature) => Padding(
@@ -219,13 +251,11 @@ class _AdPackageViewState extends State<AdPackageView> {
                   onPressed: () async {
                     await provider.addToCart(package);
                     if (!mounted) return;
-                    
+
                     if (provider.errorMessage == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            '${package.name} ditambahkan',
-                          ),
+                          content: Text('${package.name} ditambahkan'),
                           backgroundColor: const Color(0xFF00A49F),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -243,7 +273,10 @@ class _AdPackageViewState extends State<AdPackageView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3A77FF),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -255,7 +288,7 @@ class _AdPackageViewState extends State<AdPackageView> {
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
