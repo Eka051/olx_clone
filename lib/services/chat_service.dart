@@ -188,8 +188,6 @@ class ChatService {
       return false;
     }
   }
-
-  // Create new chat room
   static Future<ChatRoom?> createChatRoom({
     required String productId,
     required String sellerId,

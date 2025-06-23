@@ -18,6 +18,7 @@ class Product {
   final String sellerId;
   final String sellerName;
   final bool isActive;
+  final int? adPackageId;
 
   Product({
     required this.id,
@@ -37,6 +38,7 @@ class Product {
     required this.sellerId,
     required this.sellerName,
     required this.isActive,
+    this.adPackageId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class Product {
       sellerId: json['sellerId'] ?? '',
       sellerName: json['sellerName'] ?? '',
       isActive: json['isActive'] ?? true,
+      adPackageId: json['adPackageId'],
     );
   }
 
@@ -83,6 +86,7 @@ class Product {
       'sellerId': sellerId,
       'sellerName': sellerName,
       'isActive': isActive,
+      'adPackageId': adPackageId,
     };
   }
 

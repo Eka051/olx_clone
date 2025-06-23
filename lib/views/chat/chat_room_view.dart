@@ -9,6 +9,8 @@ import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/chat_room_provider.dart';
 import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/utils/theme.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ChatRoomView extends StatefulWidget {
   final ChatRoom chatRoom;
@@ -22,15 +24,45 @@ class ChatRoomView extends StatefulWidget {
 
 class _ChatRoomViewState extends State<ChatRoomView> {
   final ScrollController _scrollController = ScrollController();
+  Product? _product;
+  bool _isProductLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _product = widget.product;
+    if (_product == null) {
+      _fetchProduct();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProviderApp>();
       if (authProvider.jwtToken != null) {
         context.read<ChatRoomProvider>().initializeChatRoom(widget.chatRoom);
       }
       _scrollToBottom();
+    });
+  }
+
+  Future<void> _fetchProduct() async {
+    setState(() {
+      _isProductLoading = true;
+    });
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://olx-api-production.up.railway.app/api/products/${widget.chatRoom.productId}',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _product = Product.fromJson(data['data']);
+        });
+      }
+    } catch (_) {}
+    setState(() {
+      _isProductLoading = false;
     });
   }
 
@@ -66,18 +98,33 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         appBar: _buildAppBar(context, deviceWidth, deviceHeight),
         body: Consumer<ChatRoomProvider>(
           builder: (context, chatProvider, child) {
-            return Column(
+            return Stack(
               children: [
-                _buildProductHeader(context, deviceWidth),
-                Expanded(
-                  child: _buildMessagesArea(context, chatProvider, deviceWidth),
+                Column(
+                  children: [
+                    SizedBox(height: deviceHeight * 0.18),
+                    Expanded(
+                      child: _buildMessagesArea(
+                        context,
+                        chatProvider,
+                        deviceWidth,
+                      ),
+                    ),
+                    _buildMessageInput(
+                      context,
+                      chatProvider,
+                      deviceWidth,
+                      deviceHeight,
+                    ),
+                  ],
                 ),
-                _buildMessageInput(
-                  context,
-                  chatProvider,
-                  deviceWidth,
-                  deviceHeight,
-                ),
+                if (_product != null)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildProductHeader(context, deviceWidth),
+                  ),
               ],
             );
           },
@@ -100,18 +147,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     if (currentUser != null) {
       if (currentUser.id == widget.chatRoom.buyerId) {
         otherUserName = widget.chatRoom.sellerName;
-        otherUserAvatar = null;
-        if (profileProvider.user?.id != widget.chatRoom.sellerId &&
-            profileProvider.user?.profilePictureUrl != null) {
-          otherUserAvatar = profileProvider.user!.profilePictureUrl;
-        }
+        otherUserAvatar = widget.chatRoom.sellerProfilePictureUrl ?? '';
       } else {
         otherUserName = widget.chatRoom.buyerName;
-        otherUserAvatar = null;
-        if (profileProvider.user?.id != widget.chatRoom.buyerId &&
-            profileProvider.user?.profilePictureUrl != null) {
-          otherUserAvatar = profileProvider.user!.profilePictureUrl;
-        }
+        otherUserAvatar = widget.chatRoom.buyerProfilePictureUrl ?? '';
       }
     }
 
@@ -129,7 +168,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
           children: [
             CircleAvatar(
               radius: deviceWidth * 0.05,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withAlpha(30),
               backgroundImage:
                   (otherUserAvatar != null && otherUserAvatar.isNotEmpty)
                       ? NetworkImage(otherUserAvatar)
@@ -157,24 +196,32 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.call, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-          ),
-          SizedBox(width: deviceWidth * 0.02),
-        ],
+        actions: [SizedBox(width: deviceWidth * 0.02)],
       ),
     );
   }
 
   Widget _buildProductHeader(BuildContext context, double deviceWidth) {
-    if (widget.product == null) return const SizedBox.shrink();
-    final product = widget.product!;
+    final product = _product;
+    if (_isProductLoading) {
+      return Container(
+        margin: EdgeInsets.all(deviceWidth * 0.04),
+        padding: EdgeInsets.all(deviceWidth * 0.04),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(30),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Container(
       margin: EdgeInsets.all(deviceWidth * 0.04),
       padding: EdgeInsets.all(deviceWidth * 0.04),
@@ -183,7 +230,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(30),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -202,7 +249,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child:
-                  product.images.isNotEmpty
+                  (product != null && product.images.isNotEmpty)
                       ? Image.network(
                         product.images.first,
                         fit: BoxFit.cover,
@@ -227,7 +274,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.title,
+                  product?.title ?? '-',
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.of(context).colors.primaryTextColor,
@@ -236,25 +283,43 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: deviceWidth * 0.02),
+                SizedBox(height: deviceWidth * 0.01),
                 Text(
-                  product.formattedPrice,
+                  product?.categoryName ?? '-',
+                  style: AppTheme.of(
+                    context,
+                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
+                ),
+                SizedBox(height: deviceWidth * 0.01),
+                Text(
+                  product?.formattedPrice ?? '-',
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     color: AppTheme.of(context).colors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: deviceWidth * 0.045,
                   ),
                 ),
+                SizedBox(height: deviceWidth * 0.01),
+                Text(
+                  product != null
+                      ? '${product.districtName}, ${product.cityName}, ${product.provinceName}'
+                      : '-',
+                  style: AppTheme.of(
+                    context,
+                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
+                ),
               ],
             ),
           ),
           GestureDetector(
             onTap: () {
-              Navigator.pushNamed(
-                context,
-                '/product-details',
-                arguments: product,
-              );
+              if (product != null) {
+                Navigator.pushNamed(
+                  context,
+                  '/product-details',
+                  arguments: product,
+                );
+              }
             },
             child: Container(
               padding: EdgeInsets.symmetric(
@@ -285,42 +350,27 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     ChatRoomProvider chatProvider,
     double deviceWidth,
   ) {
-    if (chatProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (chatProvider.error != null && chatProvider.messages.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text(
-            'Gagal memuat pesan: ${chatProvider.error}',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
     final currentUserId = context.read<ProfileProvider>().user?.id;
-
     if (currentUserId == null) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: EdgeInsets.symmetric(
-        horizontal: deviceWidth * 0.04,
-        vertical: 20,
-      ),
-      itemCount: chatProvider.messages.length,
-      itemBuilder: (context, index) {
-        final message = chatProvider.messages[index];
-        final bool isMe = message.senderId == currentUserId;
-        return _buildMessageBubble(context, message, isMe, deviceWidth);
+    return RefreshIndicator(
+      onRefresh: () async {
+        await chatProvider.fetchMessages(widget.chatRoom.id);
       },
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(
+          horizontal: deviceWidth * 0.04,
+          vertical: 20,
+        ),
+        itemCount: chatProvider.messages.length,
+        itemBuilder: (context, index) {
+          final message = chatProvider.messages[index];
+          final bool isMe = message.senderId == currentUserId;
+          return _buildMessageBubble(context, message, isMe, deviceWidth);
+        },
+      ),
     );
   }
 
@@ -381,11 +431,17 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 ),
                 if (isMe) SizedBox(width: deviceWidth * 0.01),
                 if (isMe)
-                  Icon(
-                    message.isRead ? Icons.done_all : Icons.done,
-                    color: message.isRead ? Colors.lightBlueAccent : timeColor,
-                    size: deviceWidth * 0.035,
-                  ),
+                  message.isRead
+                      ? Icon(
+                        Icons.done_all,
+                        color: Colors.lightBlueAccent,
+                        size: deviceWidth * 0.035,
+                      )
+                      : Icon(
+                        Icons.done,
+                        color: timeColor,
+                        size: deviceWidth * 0.035,
+                      ),
               ],
             ),
           ],
@@ -422,19 +478,16 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              onPressed: () {},
-              icon: Icon(
-                Icons.attach_file,
-                color: AppTheme.of(context).colors.secondary,
-                size: deviceWidth * 0.06,
-              ),
-            ),
+            // Removed attachment icon for OLX style
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppTheme.of(context).colors.primary,
+                    width: 1.5,
+                  ),
                 ),
                 child: TextField(
                   controller: chatProvider.messageController,

@@ -4,8 +4,10 @@ class ChatRoom {
   final String productTitle;
   final String buyerId;
   final String buyerName;
+  final String? buyerProfilePictureUrl;
   final String sellerId;
   final String sellerName;
+  final String? sellerProfilePictureUrl;
   final DateTime createdAt;
   final String? lastMessage;
   final DateTime? lastMessageAt;
@@ -17,8 +19,10 @@ class ChatRoom {
     required this.productTitle,
     required this.buyerId,
     required this.buyerName,
+    this.buyerProfilePictureUrl,
     required this.sellerId,
     required this.sellerName,
+    this.sellerProfilePictureUrl,
     required this.createdAt,
     this.lastMessage,
     this.lastMessageAt,
@@ -32,8 +36,10 @@ class ChatRoom {
       productTitle: json['productTitle'] ?? '',
       buyerId: json['buyerId'] ?? '',
       buyerName: json['buyerName'] ?? '',
+      buyerProfilePictureUrl: json['buyerProfilePictureUrl'],
       sellerId: json['sellerId'] ?? '',
       sellerName: json['sellerName'] ?? '',
+      sellerProfilePictureUrl: json['sellerProfilePictureUrl'],
       createdAt: DateTime.parse(
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
@@ -52,8 +58,10 @@ class ChatRoom {
       'productTitle': productTitle,
       'buyerId': buyerId,
       'buyerName': buyerName,
+      'buyerProfilePictureUrl': buyerProfilePictureUrl,
       'sellerId': sellerId,
       'sellerName': sellerName,
+      'sellerProfilePictureUrl': sellerProfilePictureUrl,
       'createdAt': createdAt.toIso8601String(),
       'lastMessage': lastMessage,
       'lastMessageAt': lastMessageAt?.toIso8601String(),
@@ -67,8 +75,10 @@ class ChatRoom {
     String? productTitle,
     String? buyerId,
     String? buyerName,
+    String? buyerProfilePictureUrl,
     String? sellerId,
     String? sellerName,
+    String? sellerProfilePictureUrl,
     DateTime? createdAt,
     String? lastMessage,
     DateTime? lastMessageAt,
@@ -80,8 +90,10 @@ class ChatRoom {
       productTitle: productTitle ?? this.productTitle,
       buyerId: buyerId ?? this.buyerId,
       buyerName: buyerName ?? this.buyerName,
+      buyerProfilePictureUrl: buyerProfilePictureUrl ?? this.buyerProfilePictureUrl,
       sellerId: sellerId ?? this.sellerId,
       sellerName: sellerName ?? this.sellerName,
+      sellerProfilePictureUrl: sellerProfilePictureUrl ?? this.sellerProfilePictureUrl,
       createdAt: createdAt ?? this.createdAt,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,

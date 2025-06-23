@@ -562,12 +562,11 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> soldProduct(int productId) async {
+  Future<bool> soldProduct(int productId) async {
     final token = _authProvider.jwtToken;
     if (token == null) {
-      return;
+      return false;
     }
-
     final response = await http.patch(
       Uri.parse('$_apiBaseUrl/products/$productId/sold'),
       headers: {
@@ -578,7 +577,9 @@ class ProductProvider extends ChangeNotifier {
     if (response.statusCode == 200) {
       _isSold = true;
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   Future<void> toggleFavoriteStatus(int productId) async {

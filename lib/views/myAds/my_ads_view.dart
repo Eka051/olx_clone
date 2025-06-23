@@ -765,19 +765,64 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () {},
+            onPressed: () async {
+              final shouldMarkSold = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: theme.colors.background,
+            title: const Text('Tandai sebagai Terjual'),
+            content: const Text(
+              'Apakah Anda yakin ingin menandai iklan ini sebagai terjual? Anda tidak dapat mengaktifkan kembali iklan setelah menandainya sebagai terjual.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colors.primary,
+                ),
+                child: const Text(
+            'Ya, Tandai Terjual',
+            style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+              );
+              if (shouldMarkSold == true) {
+          // Call your provider or logic to mark as sold here
+          final messenger = ScaffoldMessenger.of(context);
+          final productProvider = context.read<ProductProvider>();
+          final success = await productProvider.soldProduct(product.id);
+          if (mounted) {
+            if (success) {
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Iklan berhasil ditandai sebagai terjual')),
+              );
+              _loadData();
+            } else {
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Gagal menandai iklan sebagai terjual')),
+              );
+            }
+          }
+              }
+            },
             style: OutlinedButton.styleFrom(
               foregroundColor: theme.colors.primary,
               side: BorderSide(color: theme.colors.primary, width: 1.5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(4),
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             child: Text(
               'Tandai sebagai terjual',
               style: theme.textStyle.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.bold,
               ),
             ),
           ),
