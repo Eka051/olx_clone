@@ -100,10 +100,18 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     if (currentUser != null) {
       if (currentUser.id == widget.chatRoom.buyerId) {
         otherUserName = widget.chatRoom.sellerName;
-        otherUserAvatar = widget.chatRoom.sellerProfilePicture ?? widget.chatRoom.sellerProfileUrl;
+        otherUserAvatar = null;
+        if (profileProvider.user?.id != widget.chatRoom.sellerId &&
+            profileProvider.user?.profilePictureUrl != null) {
+          otherUserAvatar = profileProvider.user!.profilePictureUrl;
+        }
       } else {
         otherUserName = widget.chatRoom.buyerName;
-        otherUserAvatar = widget.chatRoom.buyerProfilePicture ?? widget.chatRoom.buyerProfileUrl;
+        otherUserAvatar = null;
+        if (profileProvider.user?.id != widget.chatRoom.buyerId &&
+            profileProvider.user?.profilePictureUrl != null) {
+          otherUserAvatar = profileProvider.user!.profilePictureUrl;
+        }
       }
     }
 
@@ -122,9 +130,11 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             CircleAvatar(
               radius: deviceWidth * 0.05,
               backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: (otherUserAvatar != null && otherUserAvatar.isNotEmpty)
-                  ? NetworkImage(otherUserAvatar)
-                  : const AssetImage('assets/images/avatar.png') as ImageProvider,
+              backgroundImage:
+                  (otherUserAvatar != null && otherUserAvatar.isNotEmpty)
+                      ? NetworkImage(otherUserAvatar)
+                      : const AssetImage('assets/images/avatar.png')
+                          as ImageProvider,
               onBackgroundImageError: (_, __) {},
             ),
             SizedBox(width: deviceWidth * 0.03),
@@ -164,9 +174,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
 
   Widget _buildProductHeader(BuildContext context, double deviceWidth) {
     if (widget.product == null) return const SizedBox.shrink();
-
     final product = widget.product!;
-
     return Container(
       margin: EdgeInsets.all(deviceWidth * 0.04),
       padding: EdgeInsets.all(deviceWidth * 0.04),
@@ -184,7 +192,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: Row(
         children: [
-          // Product Image
           Container(
             width: deviceWidth * 0.16,
             height: deviceWidth * 0.16,
@@ -215,8 +222,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             ),
           ),
           SizedBox(width: deviceWidth * 0.04),
-
-          // Product Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +247,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 ),
               ],
             ),
-          ), // Action Button
+          ),
           GestureDetector(
             onTap: () {
               Navigator.pushNamed(
@@ -446,7 +451,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   onSubmitted: (value) {
                     final message = chatProvider.messageController.text.trim();
                     if (message.isNotEmpty) {
-                      chatProvider.sendMessage(message);
+                      chatProvider.sendMessage();
                       _scrollToBottom();
                     }
                   },
@@ -458,7 +463,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               onTap: () {
                 final message = chatProvider.messageController.text.trim();
                 if (message.isNotEmpty) {
-                  chatProvider.sendMessage(message);
+                  chatProvider.sendMessage();
                   _scrollToBottom();
                 }
               },
