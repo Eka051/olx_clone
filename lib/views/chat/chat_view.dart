@@ -177,8 +177,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       ],
                     )
                     : const Center(child: CircularProgressIndicator()),
-          ),
-        );
+          );
       },
     );
   }
@@ -257,7 +256,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
           ],
         ),
       );
-    }P
+    }
     return RefreshIndicator(
       onRefresh: () => chatListProvider.refreshChatList(),
       child: ListView.builder(
@@ -267,7 +266,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
           final chatRoom = chatRooms[index];
           return _buildChatItem(context, chatRoom, chatListProvider);
         },
-      );
+      ));
   }
 
   Widget _buildChatItem(
@@ -305,7 +304,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: chatRoom.productImageUrl != null && chatRoom.productImageUrl!.isNotEmpty
+                child: (chatRoom.productImageUrl != null && chatRoom.productImageUrl!.isNotEmpty)
                     ? Image.network(
                         chatRoom.productImageUrl!,
                         fit: BoxFit.cover,
