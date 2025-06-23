@@ -91,8 +91,16 @@ class PaymentProvider extends ChangeNotifier {
           );
   }
 
-  void loadDokuCheckout(String paymentUrl) {
+  void loadDokuCheckout(dynamic paymentUrl) {
     if (_controller == null) return;
+
+    String? urlString;
+    if (paymentUrl is String) {
+      urlString = paymentUrl;
+    } else if (paymentUrl is Map && paymentUrl.containsKey('paymentUrl')) {
+      urlString = paymentUrl['paymentUrl']?.toString();
+    }
+    if (urlString == null || urlString.isEmpty) return;
 
     final String htmlContent = '''
       <!DOCTYPE html>
@@ -109,7 +117,7 @@ class PaymentProvider extends ChangeNotifier {
         <script type="text/javascript">
           function loadJokul() {
             try {
-              loadJokulCheckout('$paymentUrl');
+              loadJokulCheckout('$urlString');
             } catch (e) {
               document.body.innerHTML = 'Gagal memuat halaman pembayaran. Silakan coba lagi.';
             }
