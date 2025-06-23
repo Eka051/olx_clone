@@ -63,11 +63,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: Scaffold(
         backgroundColor: AppTheme.of(context).colors.background,
-        appBar: _buildAppBar(
-          context,
-          deviceWidth,
-          deviceHeight,
-        ),
+        appBar: _buildAppBar(context, deviceWidth, deviceHeight),
         body: Consumer<ChatRoomProvider>(
           builder: (context, chatProvider, child) {
             return Column(
@@ -104,10 +100,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     if (currentUser != null) {
       if (currentUser.id == widget.chatRoom.buyerId) {
         otherUserName = widget.chatRoom.sellerName;
-        otherUserAvatar = widget.chatRoom.sellerProfilePicture;
+        otherUserAvatar = widget.chatRoom.sellerProfilePicture ?? widget.chatRoom.sellerProfileUrl;
       } else {
         otherUserName = widget.chatRoom.buyerName;
-        otherUserAvatar = widget.chatRoom.buyerProfilePicture;
+        otherUserAvatar = widget.chatRoom.buyerProfilePicture ?? widget.chatRoom.buyerProfileUrl;
       }
     }
 
@@ -126,11 +122,9 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             CircleAvatar(
               radius: deviceWidth * 0.05,
               backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: (otherUserAvatar != null &&
-                      otherUserAvatar.isNotEmpty)
+              backgroundImage: (otherUserAvatar != null && otherUserAvatar.isNotEmpty)
                   ? NetworkImage(otherUserAvatar)
-                  : const AssetImage('assets/images/avatar.png')
-                      as ImageProvider,
+                  : const AssetImage('assets/images/avatar.png') as ImageProvider,
               onBackgroundImageError: (_, __) {},
             ),
             SizedBox(width: deviceWidth * 0.03),
@@ -142,10 +136,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   Text(
                     otherUserName,
                     style: AppTheme.of(context).textStyle.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: deviceWidth * 0.042,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: deviceWidth * 0.042,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -302,7 +296,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       );
     }
 
-    final currentUserId = context.watch<ProfileProvider>().user?.id;
+    final currentUserId = context.read<ProfileProvider>().user?.id;
 
     if (currentUserId == null) {
       return const Center(child: CircularProgressIndicator());
@@ -402,8 +396,12 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceHeight,
   ) {
     return Container(
-      padding: EdgeInsets.fromLTRB(deviceWidth * 0.02, deviceWidth * 0.02,
-          deviceWidth * 0.02, deviceWidth * 0.04),
+      padding: EdgeInsets.fromLTRB(
+        deviceWidth * 0.02,
+        deviceWidth * 0.02,
+        deviceWidth * 0.02,
+        deviceWidth * 0.04,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -446,8 +444,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: null,
                   onSubmitted: (value) {
-                    final message =
-                        chatProvider.messageController.text.trim();
+                    final message = chatProvider.messageController.text.trim();
                     if (message.isNotEmpty) {
                       chatProvider.sendMessage(message);
                       _scrollToBottom();

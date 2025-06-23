@@ -3,8 +3,13 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class PaymentWebview extends StatefulWidget {
   final String paymentUrl;
+  final String finishUrl; 
 
-  const PaymentWebview({super.key, required this.paymentUrl});
+  const PaymentWebview({
+    super.key, 
+    required this.paymentUrl,
+    required this.finishUrl,
+  });
 
   @override
   State<PaymentWebview> createState() => _PaymentWebviewState();
@@ -48,13 +53,10 @@ class _PaymentWebviewState extends State<PaymentWebview> {
           },
           onNavigationRequest: (NavigationRequest request) {
             final Uri uri = Uri.parse(request.url);
-
-            // Logika untuk menangani redirect dari Midtrans
-            // Midtrans biasanya akan redirect dengan menyertakan status di query parameter.
-            // URL ini mungkin perlu disesuaikan tergantung pada konfigurasi "Finish URL" Anda di Midtrans.
-            if (uri.queryParameters.containsKey('transaction_status')) {
+            
+            if (request.url.startsWith(widget.finishUrl)) {
               handlePaymentResult(uri);
-              return NavigationDecision.prevent; // Mencegah navigasi lebih lanjut
+              return NavigationDecision.prevent;
             }
 
             return NavigationDecision.navigate;
@@ -76,7 +78,7 @@ class _PaymentWebviewState extends State<PaymentWebview> {
       case 'pending':
         result = 'pending';
         break;
-      default: // deny, cancel, expire, etc.
+      default:
         result = 'failed';
         break;
     }
@@ -99,9 +101,16 @@ class _PaymentWebviewState extends State<PaymentWebview> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading && _loadingPercentage < 100)
-             LinearProgressIndicator(
-              value: _loadingPercentage / 100.0,
+          if (_isLoading)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 10),
+                  Text('Memuat... $_loadingPercentage%'),
+                ],
+              ),
             ),
         ],
       ),

@@ -310,7 +310,10 @@ class _CartViewState extends State<CartView> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PaymentWebview(paymentUrl: paymentUrl),
+            builder: (context) => PaymentWebview(
+              paymentUrl: paymentUrl,
+              finishUrl: 'https://your-finish-url.com/',
+            ),
           ),
         );
 
