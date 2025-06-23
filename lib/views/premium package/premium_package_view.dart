@@ -53,53 +53,42 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
         ),
         body: Consumer<PremiumPackageProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoading) {
+            if (provider.isLoading && provider.packages.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
 
             if (provider.errorMessage != null) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      provider.errorMessage!,
-                      style: AppTheme.of(context).textStyle.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => provider.fetchPremiumPackages(),
-                      child: const Text('Coba Lagi'),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        provider.errorMessage!,
+                        style: AppTheme.of(context).textStyle.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => provider.fetchPremiumPackages(),
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
 
             if (provider.packages.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.inbox_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Tidak ada paket premium tersedia',
-                      style: AppTheme.of(context).textStyle.bodyLarge,
-                    ),
-                  ],
-                ),
+              return const Center(
+                child: Text('Tidak ada paket premium tersedia'),
               );
             }
 
@@ -219,6 +208,7 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
               Align(
                 alignment: Alignment.topLeft,
                 child: Container(
+                  margin: const EdgeInsets.only(left: 0, top: 0),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
@@ -284,18 +274,13 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
                     ],
                   ),
                 ),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Radio<int>(
-                    value: index,
-                    groupValue: provider.selectedPackageIndex,
-                    onChanged: (int? value) {
-                      if (value != null) {
-                        provider.selectPackage(value);
-                      }
-                    },
-                    activeColor: primaryColor,
-                  ),
+                Radio<int>(
+                  value: index,
+                  groupValue: provider.selectedPackageIndex,
+                  onChanged: (int? value) {
+                    if (value != null) provider.selectPackage(value);
+                  },
+                  activeColor: primaryColor,
                 ),
               ],
             ),
@@ -373,14 +358,6 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,18 +474,18 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
     if (provider.selectedPackage == null) return;
 
     try {
-      final paymentUrl = await provider.createPremiumPayment(
+      final paymentData = await provider.createPremiumPayment(
         provider.selectedPackage!.id,
       );
 
-      if (paymentUrl != null && mounted) {
+      if (paymentData != null && mounted) {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder:
                 (context) => PaymentWebview(
-                  paymentUrl: paymentUrl,
-                  finishUrl: 'https://your-finish-url.com/',
+                  paymentUrl: paymentData['paymentUrl']!,
+                  finishUrl: paymentData['finishUrl']!,
                 ),
           ),
         );
@@ -533,36 +510,20 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
                 ),
           );
 
-          final paymentVerified = await provider.verifyPaymentSuccess(
-            provider.selectedPackage!.id,
+          await context
+              .read<ProfileProvider>()
+              .refreshProfileAfterPremiumUpgrade();
+
+          if (mounted) Navigator.pop(context);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Berhasil berlangganan premium!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
-
-          if (mounted) Navigator.of(context).pop();
-
-          if (paymentVerified && mounted) {
-            final profileProvider = context.read<ProfileProvider>();
-            await profileProvider.refreshProfileAfterPremiumUpgrade();
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Berhasil berlangganan premium!'),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            Navigator.of(context).pop();
-          } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  provider.errorMessage ??
-                      'Verifikasi pembayaran gagal. Silakan hubungi customer service.',
-                ),
-                backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+          Navigator.of(context).pop();
         } else if (result == 'failed' && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

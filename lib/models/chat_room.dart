@@ -12,6 +12,7 @@ class ChatRoom {
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final int unreadCount;
+  final String? productImage;
 
   ChatRoom({
     required this.id,
@@ -27,6 +28,7 @@ class ChatRoom {
     this.lastMessage,
     this.lastMessageAt,
     required this.unreadCount,
+    this.productImage,
   });
 
   factory ChatRoom.fromJson(Map<String, dynamic> json) {
@@ -44,10 +46,12 @@ class ChatRoom {
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
       lastMessage: json['lastMessage'],
-      lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.parse(json['lastMessageAt'])
-          : null,
+      lastMessageAt:
+          json['lastMessageAt'] != null
+              ? DateTime.parse(json['lastMessageAt'])
+              : null,
       unreadCount: json['unreadCount'] ?? 0,
+      productImage: json['productImage'],
     );
   }
 
@@ -66,6 +70,7 @@ class ChatRoom {
       'lastMessage': lastMessage,
       'lastMessageAt': lastMessageAt?.toIso8601String(),
       'unreadCount': unreadCount,
+      'productImage': productImage,
     };
   }
 
@@ -83,6 +88,7 @@ class ChatRoom {
     String? lastMessage,
     DateTime? lastMessageAt,
     int? unreadCount,
+    String? productImage,
   }) {
     return ChatRoom(
       id: id ?? this.id,
@@ -90,14 +96,17 @@ class ChatRoom {
       productTitle: productTitle ?? this.productTitle,
       buyerId: buyerId ?? this.buyerId,
       buyerName: buyerName ?? this.buyerName,
-      buyerProfilePictureUrl: buyerProfilePictureUrl ?? this.buyerProfilePictureUrl,
+      buyerProfilePictureUrl:
+          buyerProfilePictureUrl ?? this.buyerProfilePictureUrl,
       sellerId: sellerId ?? this.sellerId,
       sellerName: sellerName ?? this.sellerName,
-      sellerProfilePictureUrl: sellerProfilePictureUrl ?? this.sellerProfilePictureUrl,
+      sellerProfilePictureUrl:
+          sellerProfilePictureUrl ?? this.sellerProfilePictureUrl,
       createdAt: createdAt ?? this.createdAt,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       unreadCount: unreadCount ?? this.unreadCount,
+      productImage: productImage ?? this.productImage,
     );
   }
 }

@@ -53,10 +53,15 @@ dependencies:
   http_parser: ^4.1.2
   signalr_netcore: ^1.4.3
   webview_flutter: ^4.13.0
+  flutter_launcher_icons: ^0.14.4
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/ICON-OLX.png"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

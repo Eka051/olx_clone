@@ -177,7 +177,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       ],
                     )
                     : const Center(child: CircularProgressIndicator()),
-          );
+          ));
       },
     );
   }
@@ -304,9 +304,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: (chatRoom.productImageUrl != null && chatRoom.productImageUrl!.isNotEmpty)
+                child: (chatRoom.productImage != null && chatRoom.productImage!.isNotEmpty)
                     ? Image.network(
-                        chatRoom.productImageUrl!,
+                        chatRoom.productImage!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
