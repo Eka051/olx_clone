@@ -9,7 +9,7 @@ Ideal for learning, prototyping, or expanding into a production-level marketplac
 
 ## 🚀 Features
 
-- Clean and scalable Flutter architecture
+- MVC Pattern architecture
 - Named route navigation
 - State management with `Provider`
 - Firebase Authentication & Firestore
@@ -38,7 +38,7 @@ This app uses the following Firebase services:
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/your-username/olx_clone.git
+   git clone https://github.com/Eka051/olx_clone.git
    cd olx_clone
    
 2. **Configure Firebase with FlutterFire**

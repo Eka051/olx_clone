@@ -17,29 +17,20 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -59,4 +50,34 @@ class DefaultFirebaseOptions {
     projectId: 'clone-olx-a12',
     storageBucket: 'clone-olx-a12.firebasestorage.app',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBBV3aA7VM1hg2j5hOqVRjdedPnfd93oOs',
+    appId: '1:64799472887:web:1cbe1204bb293eb95ca7f2',
+    messagingSenderId: '64799472887',
+    projectId: 'clone-olx-a12',
+    authDomain: 'clone-olx-a12.firebaseapp.com',
+    storageBucket: 'clone-olx-a12.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBvzFnOaVcU17WVukYLgCxld-7QbJwKwis',
+    appId: '1:64799472887:ios:d1910d5f97e6f2765ca7f2',
+    messagingSenderId: '64799472887',
+    projectId: 'clone-olx-a12',
+    storageBucket: 'clone-olx-a12.firebasestorage.app',
+    androidClientId: '64799472887-bblrne91bfg91plhvjhk2lsrlacidn5g.apps.googleusercontent.com',
+    iosClientId: '64799472887-v19hu8s1f5v3j9hjfrlot436elsdktr1.apps.googleusercontent.com',
+    iosBundleId: 'com.example.olxClone',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBBV3aA7VM1hg2j5hOqVRjdedPnfd93oOs',
+    appId: '1:64799472887:web:2c25368621064e715ca7f2',
+    messagingSenderId: '64799472887',
+    projectId: 'clone-olx-a12',
+    authDomain: 'clone-olx-a12.firebaseapp.com',
+    storageBucket: 'clone-olx-a12.firebasestorage.app',
+  );
+
 }

@@ -85,7 +85,7 @@ class AppTheme {
 
 final _lightColors = AppColors(
   primary: const Color(0xFF003034),
-  secondary: const Color(0xFF2ECC71),
+  secondary: const Color(0xFF00A49F),
   background: const Color(0xFFF5F5F5),
   surface: Colors.white,
   error: const Color(0xFFE74C3C),
@@ -99,7 +99,7 @@ final _lightColors = AppColors(
 
 final _darkColors = AppColors(
   primary: const Color(0xFF3498DB),
-  secondary: const Color(0xFF2ECC71),
+  secondary: const Color(0xFF00A49F),
   background: const Color(0xFF121212),
   surface: const Color(0xFF121212),
   error: const Color(0xFFE74C3C),

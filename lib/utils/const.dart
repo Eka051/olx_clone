@@ -3,6 +3,7 @@ class AppAssets {
   static const String astraLogo = 'assets/images/LOGO-MEMBER-ASTRA.png';
   static const String darkLogo = 'assets/images/OLX-LOGO-DARK.png';
   static const String lightLogo = 'assets/images/OLX-LOGO-WHITE.png';
+  static const String olxBlueLogo = 'assets/images/OLX-LOGO-BLUE.png';
 }
 
 /// String Constants
@@ -23,14 +24,23 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String authOption = '/auth-option';
-  static const String register = '/register';
+  static const String loginPhone = '/login-phone';
+  static const String loginEmail = '/login-email';
+  static const String inputOtp = '/input-otp';
+
   static const String home = '/home';
-  static const String productDetails = '/product-details';
+  static const String chat = '/chat';
+  static const String sell = '/sell';
+  static const String myAds = '/my-ads';
+  static const String myAccount = '/my-account';
+
+  static const String category = '/categories';
+  static const String categoryDetails = '/category-details';
   static const String addListing = '/add-listing';
-  static const String profile = '/profile';
+  static const String productDetails = '/product-details';
+  static const String settings = '/settings';
 }
 
-/// Standard Dimensions (for direct access without context)
 class AppDimensions {
   // Padding & Margin
   static const double paddingS = 8.0;
