@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'package:olx_clone/models/message.dart';
 
-// Temporary SignalR service implementation
-// This will be replaced with actual SignalR package implementation
 class SignalRService {
-  static const String hubUrl = 'https://olx-api.azurewebsites.net/chathub';
+  static const String hubUrl =
+      'https://olx-api-production.up.railway.app/chathub';
   bool _isConnected = false;
 
-  // Callback functions
   Function(Message)? onMessageReceived;
   Function()? onConnected;
   Function()? onDisconnected;
@@ -15,13 +13,10 @@ class SignalRService {
 
   Future<void> connect() async {
     try {
-      // Simulate connection
       await Future.delayed(const Duration(seconds: 1));
       _isConnected = true;
       onConnected?.call();
-      print('SignalR Connected successfully (simulated)');
     } catch (e) {
-      print('SignalR Connection error: $e');
       onError?.call('Connection error: $e');
     }
   }
@@ -29,14 +24,11 @@ class SignalRService {
   Future<void> joinChatRoom(String chatRoomId) async {
     try {
       if (_isConnected) {
-        // Simulate joining room
         await Future.delayed(const Duration(milliseconds: 500));
-        print('Joined chat room: $chatRoomId (simulated)');
       } else {
         throw Exception('SignalR not connected');
       }
     } catch (e) {
-      print('Error joining chat room: $e');
       onError?.call('Error joining room: $e');
     }
   }
@@ -44,12 +36,10 @@ class SignalRService {
   Future<void> leaveChatRoom(String chatRoomId) async {
     try {
       if (_isConnected) {
-        // Simulate leaving room
         await Future.delayed(const Duration(milliseconds: 300));
-        print('Left chat room: $chatRoomId (simulated)');
       }
     } catch (e) {
-      print('Error leaving chat room: $e');
+      onError?.call('Error leaving room: $e');
     }
   }
 
@@ -61,14 +51,11 @@ class SignalRService {
   }) async {
     try {
       if (_isConnected) {
-        // Simulate sending message
         await Future.delayed(const Duration(milliseconds: 200));
-        print('Message sent via SignalR (simulated): $content');
       } else {
         throw Exception('SignalR not connected');
       }
     } catch (e) {
-      print('Error sending message via SignalR: $e');
       onError?.call('Error sending message: $e');
     }
   }
@@ -77,9 +64,8 @@ class SignalRService {
     try {
       _isConnected = false;
       onDisconnected?.call();
-      print('SignalR Disconnected (simulated)');
     } catch (e) {
-      print('Error disconnecting SignalR: $e');
+      // Silent fail
     }
   }
 

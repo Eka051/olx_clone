@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:olx_clone/utils/theme.dart';
-import 'package:olx_clone/providers/chat_room_provider.dart';
 import 'package:olx_clone/models/chat_room.dart';
 import 'package:olx_clone/models/message.dart';
+import 'package:olx_clone/models/product.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/chat_room_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
+import 'package:olx_clone/utils/theme.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ChatRoomView extends StatefulWidget {
   final ChatRoom chatRoom;
+  final Product? product;
 
-  const ChatRoomView({super.key, required this.chatRoom});
+  const ChatRoomView({super.key, required this.chatRoom, this.product});
 
   @override
   State<ChatRoomView> createState() => _ChatRoomViewState();
@@ -17,13 +24,45 @@ class ChatRoomView extends StatefulWidget {
 
 class _ChatRoomViewState extends State<ChatRoomView> {
   final ScrollController _scrollController = ScrollController();
+  Product? _product;
+  bool _isProductLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _product = widget.product;
+    if (_product == null) {
+      _fetchProduct();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatRoomProvider>().initializeChatRoom(widget.chatRoom);
+      final authProvider = context.read<AuthProviderApp>();
+      if (authProvider.jwtToken != null) {
+        context.read<ChatRoomProvider>().initializeChatRoom(widget.chatRoom);
+      }
       _scrollToBottom();
+    });
+  }
+
+  Future<void> _fetchProduct() async {
+    setState(() {
+      _isProductLoading = true;
+    });
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://olx-api-production.up.railway.app/api/products/${widget.chatRoom.productId}',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _product = Product.fromJson(data['data']);
+        });
+      }
+    } catch (_) {}
+    setState(() {
+      _isProductLoading = false;
     });
   }
 
@@ -59,23 +98,33 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         appBar: _buildAppBar(context, deviceWidth, deviceHeight),
         body: Consumer<ChatRoomProvider>(
           builder: (context, chatProvider, child) {
-            return Column(
+            return Stack(
               children: [
-                // Product Info Header
-                _buildProductHeader(context, deviceWidth),
-
-                // Messages Area
-                Expanded(
-                  child: _buildMessagesArea(context, chatProvider, deviceWidth),
+                Column(
+                  children: [
+                    SizedBox(height: deviceHeight * 0.18),
+                    Expanded(
+                      child: _buildMessagesArea(
+                        context,
+                        chatProvider,
+                        deviceWidth,
+                      ),
+                    ),
+                    _buildMessageInput(
+                      context,
+                      chatProvider,
+                      deviceWidth,
+                      deviceHeight,
+                    ),
+                  ],
                 ),
-
-                // Message Input
-                _buildMessageInput(
-                  context,
-                  chatProvider,
-                  deviceWidth,
-                  deviceHeight,
-                ),
+                if (_product != null)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildProductHeader(context, deviceWidth),
+                  ),
               ],
             );
           },
@@ -89,6 +138,22 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceWidth,
     double deviceHeight,
   ) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final currentUser = profileProvider.user;
+
+    String otherUserName = "Loading...";
+    String? otherUserAvatar;
+
+    if (currentUser != null) {
+      if (currentUser.id == widget.chatRoom.buyerId) {
+        otherUserName = widget.chatRoom.sellerName;
+        otherUserAvatar = widget.chatRoom.sellerProfilePictureUrl ?? '';
+      } else {
+        otherUserName = widget.chatRoom.buyerName;
+        otherUserAvatar = widget.chatRoom.buyerProfilePictureUrl ?? '';
+      }
+    }
+
     return PreferredSize(
       preferredSize: Size.fromHeight(deviceHeight * 0.07),
       child: AppBar(
@@ -101,31 +166,24 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         ),
         title: Row(
           children: [
-            // User Avatar
             CircleAvatar(
               radius: deviceWidth * 0.05,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: AssetImage(widget.chatRoom.participantAvatar),
+              backgroundColor: Colors.white.withAlpha(30),
+              backgroundImage:
+                  (otherUserAvatar != null && otherUserAvatar.isNotEmpty)
+                      ? NetworkImage(otherUserAvatar)
+                      : const AssetImage('assets/images/avatar.png')
+                          as ImageProvider,
               onBackgroundImageError: (_, __) {},
-              child:
-                  widget.chatRoom.participantAvatar.isEmpty
-                      ? Icon(
-                        Icons.person,
-                        size: deviceWidth * 0.06,
-                        color: Colors.white,
-                      )
-                      : null,
             ),
             SizedBox(width: deviceWidth * 0.03),
-
-            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.chatRoom.participantName,
+                    otherUserName,
                     style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -133,39 +191,37 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (widget.chatRoom.isOnline)
-                    Text(
-                      'Online',
-                      style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: deviceWidth * 0.032,
-                      ),
-                    ),
                 ],
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              // Add call functionality
-            },
-            icon: const Icon(Icons.call, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: () {
-              // Add more options
-            },
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-          ),
-          SizedBox(width: deviceWidth * 0.02),
-        ],
+        actions: [SizedBox(width: deviceWidth * 0.02)],
       ),
     );
   }
 
   Widget _buildProductHeader(BuildContext context, double deviceWidth) {
+    final product = _product;
+    if (_isProductLoading) {
+      return Container(
+        margin: EdgeInsets.all(deviceWidth * 0.04),
+        padding: EdgeInsets.all(deviceWidth * 0.04),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(30),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Container(
       margin: EdgeInsets.all(deviceWidth * 0.04),
       padding: EdgeInsets.all(deviceWidth * 0.04),
@@ -174,7 +230,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(30),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -183,7 +239,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: Row(
         children: [
-          // Product Image
           Container(
             width: deviceWidth * 0.16,
             height: deviceWidth * 0.16,
@@ -193,28 +248,33 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                widget.chatRoom.productImage,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.image,
-                    color: Colors.grey[400],
-                    size: deviceWidth * 0.08,
-                  );
-                },
-              ),
+              child:
+                  (product != null && product.images.isNotEmpty)
+                      ? Image.network(
+                        product.images.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.image,
+                            color: Colors.grey[400],
+                            size: deviceWidth * 0.08,
+                          );
+                        },
+                      )
+                      : Icon(
+                        Icons.image,
+                        color: Colors.grey[400],
+                        size: deviceWidth * 0.08,
+                      ),
             ),
           ),
           SizedBox(width: deviceWidth * 0.04),
-
-          // Product Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.chatRoom.productTitle,
+                  product?.title ?? '-',
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.of(context).colors.primaryTextColor,
@@ -223,35 +283,60 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: deviceWidth * 0.02),
+                SizedBox(height: deviceWidth * 0.01),
                 Text(
-                  widget.chatRoom.productPrice,
+                  product?.categoryName ?? '-',
+                  style: AppTheme.of(
+                    context,
+                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
+                ),
+                SizedBox(height: deviceWidth * 0.01),
+                Text(
+                  product?.formattedPrice ?? '-',
                   style: AppTheme.of(context).textStyle.titleMedium.copyWith(
                     color: AppTheme.of(context).colors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: deviceWidth * 0.045,
                   ),
                 ),
+                SizedBox(height: deviceWidth * 0.01),
+                Text(
+                  product != null
+                      ? '${product.districtName}, ${product.cityName}, ${product.provinceName}'
+                      : '-',
+                  style: AppTheme.of(
+                    context,
+                  ).textStyle.bodySmall.copyWith(color: Colors.grey[600]),
+                ),
               ],
             ),
           ),
-
-          // Action Button
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: deviceWidth * 0.03,
-              vertical: deviceWidth * 0.02,
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.of(context).colors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'Lihat',
-              style: AppTheme.of(context).textStyle.bodySmall.copyWith(
-                color: AppTheme.of(context).colors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: deviceWidth * 0.032,
+          GestureDetector(
+            onTap: () {
+              if (product != null) {
+                Navigator.pushNamed(
+                  context,
+                  '/product-details',
+                  arguments: product,
+                );
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: deviceWidth * 0.03,
+                vertical: deviceWidth * 0.02,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.of(context).colors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'Lihat',
+                style: AppTheme.of(context).textStyle.bodySmall.copyWith(
+                  color: AppTheme.of(context).colors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: deviceWidth * 0.032,
+                ),
               ),
             ),
           ),
@@ -265,61 +350,27 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     ChatRoomProvider chatProvider,
     double deviceWidth,
   ) {
-    if (chatProvider.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: AppTheme.of(context).colors.primary,
-        ),
-      );
+    final currentUserId = context.read<ProfileProvider>().user?.id;
+    if (currentUserId == null) {
+      return const Center(child: CircularProgressIndicator());
     }
-
-    if (chatProvider.error != null && chatProvider.messages.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(deviceWidth * 0.08),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: deviceWidth * 0.15,
-                color: Colors.grey[400],
-              ),
-              SizedBox(height: deviceWidth * 0.04),
-              Text(
-                'Gagal memuat pesan',
-                style: AppTheme.of(context).textStyle.titleMedium.copyWith(
-                  color: AppTheme.of(context).colors.primaryTextColor,
-                ),
-              ),
-              SizedBox(height: deviceWidth * 0.02),
-              ElevatedButton(
-                onPressed: () {
-                  chatProvider.fetchMessages(widget.chatRoom.id);
-                },
-                child: const Text('Coba Lagi'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: EdgeInsets.symmetric(
-        horizontal: deviceWidth * 0.04,
-        vertical: deviceWidth * 0.02,
-      ),
-      itemCount: chatProvider.messages.length,
-      itemBuilder: (context, index) {
-        final message = chatProvider.messages[index];
-        final isMe =
-            message.senderId ==
-            'current_user_123'; // This should match the current user ID
-
-        return _buildMessageBubble(context, message, isMe, deviceWidth);
+    return RefreshIndicator(
+      onRefresh: () async {
+        await chatProvider.fetchMessages(widget.chatRoom.id);
       },
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(
+          horizontal: deviceWidth * 0.04,
+          vertical: 20,
+        ),
+        itemCount: chatProvider.messages.length,
+        itemBuilder: (context, index) {
+          final message = chatProvider.messages[index];
+          final bool isMe = message.senderId == currentUserId;
+          return _buildMessageBubble(context, message, isMe, deviceWidth);
+        },
+      ),
     );
   }
 
@@ -329,103 +380,72 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     bool isMe,
     double deviceWidth,
   ) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: deviceWidth * 0.01),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: deviceWidth * 0.04,
-              backgroundColor: Colors.grey[300],
-              backgroundImage: AssetImage(widget.chatRoom.participantAvatar),
-              onBackgroundImageError: (_, __) {},
-              child:
-                  widget.chatRoom.participantAvatar.isEmpty
-                      ? Icon(
-                        Icons.person,
-                        size: deviceWidth * 0.04,
-                        color: Colors.grey[600],
-                      )
-                      : null,
-            ),
-            SizedBox(width: deviceWidth * 0.02),
-          ],
+    final theme = AppTheme.of(context);
+    final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor = isMe ? theme.colors.primary : Colors.white;
+    final textColor = isMe ? Colors.white : Colors.black87;
+    final timeColor = isMe ? Colors.white70 : Colors.black54;
 
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: deviceWidth * 0.75),
-              padding: EdgeInsets.symmetric(
-                horizontal: deviceWidth * 0.04,
-                vertical: deviceWidth * 0.03,
-              ),
-              decoration: BoxDecoration(
-                color:
-                    isMe
-                        ? AppTheme.of(context).colors.primary
-                        : Colors.grey[100],
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.content,
-                    style: AppTheme.of(context).textStyle.bodyMedium.copyWith(
-                      color:
-                          isMe
-                              ? Colors.white
-                              : AppTheme.of(context).colors.primaryTextColor,
-                      fontSize: deviceWidth * 0.038,
-                    ),
-                  ),
-                  SizedBox(height: deviceWidth * 0.01),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatMessageTime(message.timestamp),
-                        style: AppTheme.of(
-                          context,
-                        ).textStyle.bodySmall.copyWith(
-                          color:
-                              isMe
-                                  ? Colors.white.withOpacity(0.7)
-                                  : AppTheme.of(
-                                    context,
-                                  ).colors.secondaryTextColor,
-                          fontSize: deviceWidth * 0.028,
-                        ),
-                      ),
-                      if (isMe) ...[
-                        SizedBox(width: deviceWidth * 0.01),
-                        Icon(
-                          message.isSent
-                              ? (message.isRead ? Icons.done_all : Icons.done)
-                              : Icons.access_time,
-                          size: deviceWidth * 0.035,
-                          color:
-                              message.isRead
-                                  ? Colors.blue[300]
-                                  : Colors.white.withOpacity(0.7),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
+    return Align(
+      alignment: alignment,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: deviceWidth * 0.75),
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft:
+                isMe ? const Radius.circular(18) : const Radius.circular(4),
+            bottomRight:
+                isMe ? const Radius.circular(4) : const Radius.circular(18),
           ),
-
-          if (isMe) SizedBox(width: deviceWidth * 0.02),
-        ],
+          boxShadow: [
+            if (!isMe)
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.content,
+              style: theme.textStyle.bodyMedium.copyWith(color: textColor),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatMessageTime(message.timestamp.toLocal()),
+                  style: theme.textStyle.bodySmall.copyWith(
+                    color: timeColor,
+                    fontSize: deviceWidth * 0.03,
+                  ),
+                ),
+                if (isMe) SizedBox(width: deviceWidth * 0.01),
+                if (isMe)
+                  message.isRead
+                      ? Icon(
+                        Icons.done_all,
+                        color: Colors.lightBlueAccent,
+                        size: deviceWidth * 0.035,
+                      )
+                      : Icon(
+                        Icons.done,
+                        color: timeColor,
+                        size: deviceWidth * 0.035,
+                      ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -437,7 +457,12 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceHeight,
   ) {
     return Container(
-      padding: EdgeInsets.all(deviceWidth * 0.04),
+      padding: EdgeInsets.fromLTRB(
+        deviceWidth * 0.02,
+        deviceWidth * 0.02,
+        deviceWidth * 0.02,
+        deviceWidth * 0.04,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -451,91 +476,60 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: SafeArea(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Attachment button
-            Container(
-              margin: EdgeInsets.only(right: deviceWidth * 0.02),
-              child: IconButton(
-                onPressed: () {
-                  // Add attachment functionality
-                },
-                icon: Icon(
-                  Icons.attach_file,
-                  color: AppTheme.of(context).colors.secondary,
-                  size: deviceWidth * 0.06,
-                ),
-              ),
-            ),
-
-            // Text input
+            // Removed attachment icon for OLX style
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppTheme.of(context).colors.primary,
+                    width: 1.5,
+                  ),
                 ),
                 child: TextField(
                   controller: chatProvider.messageController,
                   decoration: InputDecoration(
                     hintText: 'Ketik pesan...',
-                    hintStyle: AppTheme.of(
-                      context,
-                    ).textStyle.bodyMedium.copyWith(
-                      color: AppTheme.of(context).colors.hintTextColor,
-                    ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: deviceWidth * 0.04,
-                      vertical: deviceWidth * 0.03,
+                      vertical: deviceWidth * 0.025,
                     ),
                   ),
-                  style: AppTheme.of(
-                    context,
-                  ).textStyle.bodyMedium.copyWith(fontSize: deviceWidth * 0.04),
-                  maxLines: 4,
-                  minLines: 1,
                   textCapitalization: TextCapitalization.sentences,
-                  onSubmitted: (_) {
-                    chatProvider.sendMessage();
-                    _scrollToBottom();
+                  maxLines: null,
+                  onSubmitted: (value) {
+                    final message = chatProvider.messageController.text.trim();
+                    if (message.isNotEmpty) {
+                      chatProvider.sendMessage();
+                      _scrollToBottom();
+                    }
                   },
                 ),
               ),
             ),
-
-            // Send button
-            Container(
-              margin: EdgeInsets.only(left: deviceWidth * 0.02),
-              child:
-                  chatProvider.isSending
-                      ? SizedBox(
-                        width: deviceWidth * 0.06,
-                        height: deviceWidth * 0.06,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppTheme.of(context).colors.primary,
-                        ),
-                      )
-                      : IconButton(
-                        onPressed: () {
-                          chatProvider.sendMessage();
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _scrollToBottom();
-                          });
-                        },
-                        icon: Container(
-                          padding: EdgeInsets.all(deviceWidth * 0.025),
-                          decoration: BoxDecoration(
-                            color: AppTheme.of(context).colors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.send,
-                            color: Colors.white,
-                            size: deviceWidth * 0.05,
-                          ),
-                        ),
-                      ),
+            SizedBox(width: deviceWidth * 0.02),
+            InkWell(
+              onTap: () {
+                final message = chatProvider.messageController.text.trim();
+                if (message.isNotEmpty) {
+                  chatProvider.sendMessage();
+                  _scrollToBottom();
+                }
+              },
+              borderRadius: BorderRadius.circular(24),
+              child: CircleAvatar(
+                radius: deviceWidth * 0.06,
+                backgroundColor: AppTheme.of(context).colors.primary,
+                child: Icon(
+                  Icons.send,
+                  color: Colors.white,
+                  size: deviceWidth * 0.055,
+                ),
+              ),
             ),
           ],
         ),
@@ -544,19 +538,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   }
 
   String _formatMessageTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-
-    if (messageDate == today) {
-      // Today - show time only
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      // Yesterday
-      return 'Kemarin ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      // Other days - show date and time
-      return '${dateTime.day}/${dateTime.month} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    }
+    return DateFormat('HH:mm').format(dateTime);
   }
 }

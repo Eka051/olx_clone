@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:olx_clone/models/chat_room.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/chat_filter_provider.dart';
 import 'package:olx_clone/providers/chat_list_provider.dart';
-import 'package:olx_clone/providers/auth_provider.dart';
-import 'package:olx_clone/models/chat_room.dart';
-import 'package:olx_clone/views/chat/chat_room_view.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 import 'package:olx_clone/utils/const.dart';
-import 'package:olx_clone/utils/theme.dart';
+import 'package:olx_clone/views/chat/chat_room_view.dart';
+import 'package:provider/provider.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -29,7 +29,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
         Provider.of<ChatListProvider>(
           context,
           listen: false,
-        ).initializeChatList();
+        ).initializeChatSystem();
       }
     });
   }
@@ -70,7 +70,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                   Icon(
                     Icons.lock_outline,
                     size: 64,
-                    color: colorScheme.onSurface.withOpacity(0.5),
+                    color: colorScheme.onSurface.withAlpha(120),
                   ),
                   const SizedBox(height: 16),
                   Text('Login Required', style: theme.textTheme.titleMedium),
@@ -78,7 +78,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                   Text(
                     'Please login to view your chats',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withAlpha(120),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -116,16 +116,6 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                           child: Image.asset(
                             AppAssets.olxBlueLogo,
                             fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Text(
-                                'OLX Clone',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                  color: Colors.blue,
-                                ),
-                              );
-                            },
                           ),
                         ),
                         SizedBox(height: deviceHeight * 0.02),
@@ -144,8 +134,8 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                     _tabController != null
                         ? TabBar(
                           controller: _tabController,
-                          indicatorColor: AppTheme.of(context).colors.primary,
-                          labelColor: AppTheme.of(context).colors.primary,
+                          indicatorColor: Theme.of(context).colorScheme.primary,
+                          labelColor: Theme.of(context).colorScheme.primary,
                           unselectedLabelColor: Colors.grey[600],
                           indicatorWeight: 5.0,
                           labelStyle: theme.textTheme.titleSmall?.copyWith(
@@ -187,8 +177,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       ],
                     )
                     : const Center(child: CircularProgressIndicator()),
-          ),
-        );
+          ));
       },
     );
   }
@@ -199,96 +188,85 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     ChatFilterProvider filterProvider,
     int tabIndex,
   ) {
-    return _buildChatList(context, chatListProvider, filterProvider, tabIndex);
+    final currentUserId =
+        Provider.of<ProfileProvider>(context, listen: false).user?.id;
+    final allChats = chatListProvider.getFilteredChatRooms(filterProvider);
+    List<ChatRoom> filteredChats;
+    if (tabIndex == 1) {
+      filteredChats =
+          allChats.where((chat) => chat.buyerId == currentUserId).toList();
+    } else if (tabIndex == 2) {
+      filteredChats =
+          allChats.where((chat) => chat.sellerId == currentUserId).toList();
+    } else {
+      filteredChats = allChats;
+    }
+    return _buildChatListCustom(context, filteredChats, chatListProvider);
   }
 
-  Widget _buildChatList(
+  Widget _buildChatListCustom(
     BuildContext context,
+    List<ChatRoom> chatRooms,
     ChatListProvider chatListProvider,
-    ChatFilterProvider filterProvider,
-    int tabIndex,
   ) {
     if (chatListProvider.isLoading && !chatListProvider.hasInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (chatListProvider.error != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Terjadi kesalahan',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              chatListProvider.error!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Gagal Memuat Obrolan',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => chatListProvider.refreshChatList(),
-              child: const Text('Coba Lagi'),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'Tampaknya ada masalah di server kami. Silakan coba lagi nanti.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => chatListProvider.refreshChatList(),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
         ),
       );
     }
-    final filteredChats = chatListProvider.getFilteredChatRooms(filterProvider);
-
-    if (filteredChats.isEmpty) {
+    if (chatRooms.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            ),
+            const Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              chatListProvider.isEmptyButInitialized
-                  ? 'Belum ada chat'
-                  : 'Tidak ada chat yang sesuai',
+              'Belum ada chat',
               style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              chatListProvider.isEmptyButInitialized
-                  ? 'Chat akan muncul ketika Anda mengirim atau menerima pesan'
-                  : 'Coba ubah filter atau kata kunci pencarian',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
       );
     }
-
     return RefreshIndicator(
       onRefresh: () => chatListProvider.refreshChatList(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: filteredChats.length,
+        itemCount: chatRooms.length,
         itemBuilder: (context, index) {
-          final chatRoom = filteredChats[index];
+          final chatRoom = chatRooms[index];
           return _buildChatItem(context, chatRoom, chatListProvider);
         },
-      ),
-    );
+      ));
   }
 
   Widget _buildChatItem(
@@ -322,23 +300,37 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
               height: 56,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: colorScheme.surface,
+                color: colorScheme.surfaceContainer,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  chatRoom.productImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: colorScheme.surface,
-                      child: Icon(
-                        Icons.image,
-                        color: colorScheme.onSurface.withOpacity(0.3),
+                child: (chatRoom.productImage != null && chatRoom.productImage!.isNotEmpty)
+                    ? Image.network(
+                        chatRoom.productImage!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: colorScheme.surfaceContainer,
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: colorScheme.onSurfaceVariant.withAlpha(100),
+                            ),
+                          );
+                        },
+                      )
+                    : Image.asset(
+                        'assets/images/image-ads.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: colorScheme.surfaceContainer,
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: colorScheme.onSurfaceVariant.withAlpha(100),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -353,19 +345,18 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colorScheme.surface,
+                          color: colorScheme.surfaceContainer,
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            chatRoom.participantAvatar,
+                            'assets/images/avatar.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: colorScheme.surface,
-                                child: Icon(
-                                  Icons.person,
-                                  color: colorScheme.onSurface.withOpacity(0.3),
-                                  size: 16,
+                              return Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: colorScheme.onSurfaceVariant.withAlpha(
+                                  150,
                                 ),
                               );
                             },
@@ -375,31 +366,22 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          chatRoom.participantName,
+                          chatListProvider.getOtherParticipantName(chatRoom),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: colorScheme.onBackground,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (chatRoom.isOnline)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     chatRoom.productTitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onBackground.withOpacity(0.8),
+                      color: colorScheme.onSurface.withAlpha(200),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -409,21 +391,21 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                     children: [
                       Expanded(
                         child: Text(
-                          chatRoom.lastMessage,
+                          chatRoom.lastMessage ?? '',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onBackground.withOpacity(0.6),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        _formatTime(chatRoom.lastMessageTime),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onBackground.withOpacity(0.5),
+                      if (chatRoom.lastMessageAt != null)
+                        Text(
+                          _formatTime(chatRoom.lastMessageAt!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withAlpha(150),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -432,20 +414,21 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
             const SizedBox(width: 12),
             if (chatRoom.unreadCount > 0)
               Container(
-                width: 20,
-                height: 20,
+                padding: const EdgeInsets.all(2),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                 decoration: BoxDecoration(
-                  color: colorScheme.error,
+                  color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Text(
                     chatRoom.unreadCount > 9 ? '9+' : '${chatRoom.unreadCount}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onError,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),

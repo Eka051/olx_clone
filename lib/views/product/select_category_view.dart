@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:olx_clone/views/product/create_product_view.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/providers/category_provider.dart';
 import 'package:olx_clone/models/category.dart';
-import 'package:olx_clone/views/product/create_product_view.dart';
 
 class SelectCategoryView extends StatefulWidget {
   const SelectCategoryView({super.key});
@@ -15,44 +15,38 @@ class SelectCategoryView extends StatefulWidget {
 
 class _SelectCategoryViewState extends State<SelectCategoryView> {
   final TextEditingController _searchController = TextEditingController();
-  List<Category> _filteredCategories = [];
+  CategoryProvider? _categoryProvider;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final categoryProvider = context.read<CategoryProvider>();
-      if (!categoryProvider.hasInitialized) {
-        categoryProvider.initializeCategories();
-      }
-      _filteredCategories = categoryProvider.categories;
-    });
+    _searchController.addListener(_onSearchChanged);
+  }
 
-    _searchController.addListener(_filterCategories);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _categoryProvider = context.read<CategoryProvider>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_categoryProvider!.hasInitialized) {
+        _categoryProvider!.initializeCategories();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _categoryProvider?.clearSearch();
     super.dispose();
   }
 
-  void _filterCategories() {
-    final query = _searchController.text.toLowerCase();
-    final categoryProvider = context.read<CategoryProvider>();
-
-    setState(() {
-      if (query.isEmpty) {
-        _filteredCategories = categoryProvider.categories;
-      } else {
-        _filteredCategories =
-            categoryProvider.categories
-                .where(
-                  (category) => category.name.toLowerCase().contains(query),
-                )
-                .toList();
-      }
-    });
+  void _onSearchChanged() {
+    if (mounted && _categoryProvider != null) {
+      _categoryProvider!.setSearchQuery(_searchController.text);
+    }
   }
 
   @override
@@ -71,63 +65,95 @@ class _SelectCategoryViewState extends State<SelectCategoryView> {
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(deviceHeight * 0.07),
           child: AppBar(
-            backgroundColor: AppTheme.of(context).colors.primary,
-            foregroundColor: Colors.white,
             elevation: 0,
             leading: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
             ),
             title: Text(
-              'Pilih Kategori',
-              style: AppTheme.of(context).textStyle.titleLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+              'Mau jual apa hari ini?',
+              style: AppTheme.of(context).textStyle.titleMedium.copyWith(
+                fontWeight: FontWeight.w100,
+                color: Colors.black,
               ),
             ),
-            centerTitle: false,
+            centerTitle: true,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1.0),
+              child: Container(color: Colors.grey[300], height: 1.0),
+            ),
           ),
         ),
-        body: Consumer<CategoryProvider>(
-          builder: (context, categoryProvider, child) {
-            if (categoryProvider.isLoading &&
-                !categoryProvider.hasInitialized) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.of(context).colors.primary,
-                ),
-              );
-            }
-
-            if (categoryProvider.hasError &&
-                categoryProvider.categories.isEmpty) {
-              return _buildErrorView(
-                context,
-                categoryProvider,
-                deviceWidth,
-                deviceHeight,
-              );
-            }
-
-            return Column(
-              children: [
-                // Search Bar
-                _buildSearchBar(context, deviceWidth),
-
-                // Categories List
-                Expanded(
-                  child:
-                      _filteredCategories.isEmpty
-                          ? _buildEmptySearchView(
-                            context,
-                            deviceWidth,
-                            deviceHeight,
-                          )
-                          : _buildCategoriesList(context, deviceWidth),
-                ),
-              ],
-            );
+        body: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
           },
+          child: Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, child) {
+              if (categoryProvider.shouldShowLoadingIndicator()) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.of(context).colors.primary,
+                  ),
+                );
+              }
+
+              if (categoryProvider.shouldShowErrorView()) {
+                return _buildErrorView(
+                  context,
+                  categoryProvider,
+                  deviceWidth,
+                  deviceHeight,
+                );
+              }
+
+              return Column(
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'Pilih Kategori',
+                        style: AppTheme.of(
+                          context,
+                        ).textStyle.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Text(
+                        'Pilih kategori sesuai barang yang Anda jual',
+                        style: AppTheme.of(
+                          context,
+                        ).textStyle.bodySmall.copyWith(
+                          color: AppTheme.of(context).colors.primaryTextColor,
+                          fontSize: deviceWidth * 0.025,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _buildSearchBar(context, deviceWidth),
+                  Expanded(
+                    child:
+                        categoryProvider.shouldShowEmptySearchView()
+                            ? _buildEmptySearchView(
+                              context,
+                              deviceWidth,
+                              deviceHeight,
+                            )
+                            : _buildCategoriesList(
+                              context,
+                              deviceWidth,
+                              categoryProvider,
+                            ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -135,64 +161,81 @@ class _SelectCategoryViewState extends State<SelectCategoryView> {
 
   Widget _buildSearchBar(BuildContext context, double deviceWidth) {
     return Container(
-      margin: EdgeInsets.all(deviceWidth * 0.04),
+      margin: EdgeInsets.symmetric(
+        horizontal: deviceWidth * 0.04,
+        vertical: deviceWidth * 0.02,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(15),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Cari kategori...',
-          hintStyle: AppTheme.of(context).textStyle.bodyMedium.copyWith(
-            color: AppTheme.of(context).colors.hintTextColor,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari kategori...',
+                hintStyle: AppTheme.of(context).textStyle.bodyMedium.copyWith(
+                  color: AppTheme.of(context).colors.hintTextColor,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: deviceWidth * 0.04,
+                  vertical: deviceWidth * 0.04,
+                ),
+              ),
+              style: AppTheme.of(
+                context,
+              ).textStyle.bodyMedium.copyWith(fontSize: deviceWidth * 0.04),
+              textCapitalization: TextCapitalization.words,
+            ),
           ),
-          prefixIcon: Icon(
-            Icons.search,
-            color: AppTheme.of(context).colors.secondaryTextColor,
-            size: deviceWidth * 0.06,
+          Container(
+            margin: EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppTheme.of(context).colors.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.search,
+                color: Colors.white,
+                size: deviceWidth * 0.05,
+              ),
+            ),
           ),
-          suffixIcon:
-              _searchController.text.isNotEmpty
-                  ? IconButton(
-                    onPressed: () {
-                      _searchController.clear();
-                    },
-                    icon: Icon(
-                      Icons.clear,
-                      color: AppTheme.of(context).colors.secondaryTextColor,
-                      size: deviceWidth * 0.05,
-                    ),
-                  )
-                  : null,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: deviceWidth * 0.04,
-            vertical: deviceWidth * 0.04,
-          ),
-        ),
-        style: AppTheme.of(
-          context,
-        ).textStyle.bodyMedium.copyWith(fontSize: deviceWidth * 0.04),
-        textCapitalization: TextCapitalization.words,
+        ],
       ),
     );
   }
 
-  Widget _buildCategoriesList(BuildContext context, double deviceWidth) {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: deviceWidth * 0.04),
-      itemCount: _filteredCategories.length,
+  Widget _buildCategoriesList(
+    BuildContext context,
+    double deviceWidth,
+    CategoryProvider categoryProvider,
+  ) {
+    return GridView.builder(
+      padding: EdgeInsets.all(deviceWidth * 0.04),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.95,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 6,
+      ),
+      itemCount: categoryProvider.filteredCategories.length,
       itemBuilder: (context, index) {
-        final category = _filteredCategories[index];
+        final category = categoryProvider.filteredCategories[index];
         return _buildCategoryItem(context, category, deviceWidth);
       },
     );
@@ -206,105 +249,59 @@ class _SelectCategoryViewState extends State<SelectCategoryView> {
     final categoryProvider = context.read<CategoryProvider>();
     final imagePath = categoryProvider.getCategoryImagePath(category.name);
 
-    return Container(
-      margin: EdgeInsets.only(bottom: deviceWidth * 0.03),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CreateProductView(selectedCategory: category),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => CreateProductView(selectedCategory: category),
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.all(deviceWidth * 0.02),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: deviceWidth * 0.18,
+              height: deviceWidth * 0.18,
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          },
-          child: Padding(
-            padding: EdgeInsets.all(deviceWidth * 0.04),
-            child: Row(
-              children: [
-                // Category Icon
-                Container(
-                  width: deviceWidth * 0.12,
-                  height: deviceWidth * 0.12,
-                  decoration: BoxDecoration(
-                    color: AppTheme.of(context).colors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(deviceWidth * 0.025),
-                    child: Image.asset(
-                      imagePath,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.category,
-                          size: deviceWidth * 0.06,
-                          color: AppTheme.of(context).colors.primary,
-                        );
-                      },
-                    ),
-                  ),
+              child: Padding(
+                padding: EdgeInsets.all(deviceWidth * 0.015),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.category,
+                      size: deviceWidth * 0.09,
+                      color: Colors.white,
+                    );
+                  },
                 ),
-                SizedBox(width: deviceWidth * 0.04),
-
-                // Category Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category.name,
-                        style: AppTheme.of(
-                          context,
-                        ).textStyle.titleMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.of(context).colors.primaryTextColor,
-                          fontSize: deviceWidth * 0.042,
-                        ),
-                      ),
-                      if (category.name.length > 20) ...[
-                        SizedBox(height: deviceWidth * 0.01),
-                        Text(
-                          'Kategori produk',
-                          style: AppTheme.of(
-                            context,
-                          ).textStyle.bodyMedium.copyWith(
-                            color:
-                                AppTheme.of(context).colors.secondaryTextColor,
-                            fontSize: deviceWidth * 0.035,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Arrow Icon
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: deviceWidth * 0.045,
-                  color: AppTheme.of(context).colors.secondaryTextColor,
-                ),
-              ],
+              ),
             ),
-          ),
+            SizedBox(height: deviceWidth * 0.01),
+            Text(
+              category.name,
+              style: AppTheme.of(context).textStyle.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.of(context).colors.primaryTextColor,
+                fontSize: deviceWidth * 0.03,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ],
         ),
       ),
     );
@@ -345,12 +342,15 @@ class _SelectCategoryViewState extends State<SelectCategoryView> {
             SizedBox(height: deviceHeight * 0.03),
             TextButton(
               onPressed: () {
+                if (!mounted) return;
+
                 _searchController.clear();
+                _categoryProvider?.handleSearchClear();
               },
               style: TextButton.styleFrom(
                 backgroundColor: AppTheme.of(
                   context,
-                ).colors.primary.withOpacity(0.1),
+                ).colors.primary.withValues(alpha: 0.1),
                 padding: EdgeInsets.symmetric(
                   horizontal: deviceWidth * 0.06,
                   vertical: deviceHeight * 0.012,
@@ -409,7 +409,9 @@ class _SelectCategoryViewState extends State<SelectCategoryView> {
             SizedBox(height: deviceHeight * 0.04),
             ElevatedButton(
               onPressed: () {
-                categoryProvider.initializeCategories();
+                if (!mounted) return;
+
+                categoryProvider.retryInitialization();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.of(context).colors.primary,

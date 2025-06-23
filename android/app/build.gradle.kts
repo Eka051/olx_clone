@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -8,6 +10,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Load local.properties file
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+// Get the Google Maps API key from local.properties
+val gmapsApiKey = localProperties.getProperty("GMAPS_API_KEY") ?: ""
+
 android {
     namespace = "com.example.olx_clone"
     compileSdk = flutter.compileSdkVersion
@@ -17,11 +29,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
+    
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
-
+    
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.olx_clone"
@@ -31,12 +43,21 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Inject the Google Maps API key into the manifest
+        manifestPlaceholders["GMAPS_API_KEY"] = gmapsApiKey    }
+    
+    buildFeatures {
+        buildConfig = true
     }
-
+    
     buildTypes {
+        debug {
+            buildConfigField("Boolean", "DEBUG_MODE", "true")
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            buildConfigField("Boolean", "DEBUG_MODE", "false")
             signingConfig = signingConfigs.getByName("debug")
         }
     }

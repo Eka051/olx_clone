@@ -18,7 +18,6 @@ class LocationWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.location_on_outlined,
@@ -26,18 +25,15 @@ class LocationWidget extends StatelessWidget {
               color: AppTheme.of(context).colors.primary,
             ),
             const SizedBox(width: 3),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 100),
-              child: Text(
-                location,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.of(context).colors.primary,
-                  fontSize: 12,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+            Text(
+              location,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.of(context).colors.primary,
+                fontSize: 12,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),

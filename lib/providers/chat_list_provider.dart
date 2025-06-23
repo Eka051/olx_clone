@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:olx_clone/models/chat_room.dart';
-import 'package:olx_clone/models/api_message.dart';
-import 'package:olx_clone/services/api_service.dart';
+import 'package:olx_clone/models/message.dart';
+import 'package:olx_clone/services/chat_service.dart';
 import 'package:olx_clone/providers/chat_filter_provider.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
 
 class ChatListProvider extends ChangeNotifier {
   List<ChatRoom> _chatRooms = [];
@@ -11,8 +13,14 @@ class ChatListProvider extends ChangeNotifier {
   String? _error;
   bool _hasInitialized = false;
   final AuthProviderApp _authProvider;
+  final ProfileProvider _profileProvider;
+  final ChatService _chatService = ChatService();
+  StreamSubscription? _messageSubscription;
 
-  ChatListProvider(this._authProvider);
+  ChatListProvider(this._authProvider, this._profileProvider) {
+    _authProvider.addListener(_onAuthStateChanged);
+    _onAuthStateChanged();
+  }
 
   List<ChatRoom> get chatRooms => _chatRooms;
   bool get isLoading => _isLoading;
@@ -21,43 +29,80 @@ class ChatListProvider extends ChangeNotifier {
   int get chatRoomsCount => _chatRooms.length;
   bool get isEmptyButInitialized => _hasInitialized && _chatRooms.isEmpty;
 
+  void _onAuthStateChanged() {
+    if (_authProvider.isLoggedIn && _authProvider.jwtToken != null) {
+      initializeChatSystem();
+    } else {
+      disposeChatSystem();
+    }
+  }
+
+  Future<void> initializeChatSystem() async {
+    if (hasInitialized) return;
+    await _chatService.startConnection(_authProvider.jwtToken!);
+    _messageSubscription = _chatService.messageStream.listen(_handleNewMessage);
+    await fetchChatList();
+    _hasInitialized = true;
+  }
+
+  void disposeChatSystem() {
+    _messageSubscription?.cancel();
+    _chatService.stopConnection();
+    _chatRooms = [];
+    _hasInitialized = false;
+    notifyListeners();
+  }
+
+  String getOtherParticipantName(ChatRoom chatRoom) {
+    final currentUserId = _profileProvider.user?.id;
+    if (chatRoom.buyerId == currentUserId) {
+      return chatRoom.sellerName;
+    } else {
+      return chatRoom.buyerName;
+    }
+  }
+
   List<ChatRoom> getFilteredChatRooms(ChatFilterProvider filterProvider) {
     return filterProvider.getFilteredChats<ChatRoom>(
       _chatRooms,
       getType: (chat) => _determineChatType(chat),
-      isImportant:
-          (chat) => chat.unreadCount > 0,
+      isImportant: (chat) => chat.unreadCount > 0,
       hasUnread: (chat) => chat.unreadCount > 0,
-      getParticipantName: (chat) => chat.participantName,
+      getParticipantName: (chat) => getOtherParticipantName(chat),
       getProductTitle: (chat) => chat.productTitle,
     );
   }
 
   ChatType _determineChatType(ChatRoom chatRoom) {
-    return chatRoom.id.hashCode % 2 == 0 ? ChatType.buying : ChatType.selling;
+    final currentUserId = _profileProvider.user?.id;
+    if (chatRoom.sellerId == currentUserId) {
+      return ChatType.selling;
+    }
+    return ChatType.buying;
   }
 
-  Future<void> initializeChatList() async {
-    if (_hasInitialized) return;
-
-    await fetchChatList();
-    _hasInitialized = true;
-  }
-
-  Future<void> fetchChatList() async {
-    if (_isLoading) return;
+  Future<void> fetchChatList({bool forceRefresh = false}) async {
+    if (_isLoading && !forceRefresh) return;
 
     _isLoading = true;
-    _error = null;
+    if (forceRefresh) _error = null;
     notifyListeners();
 
     try {
-      if (_authProvider.backendToken == null) {
-        throw Exception('User not authenticated. Please login again.');
+      if (_authProvider.jwtToken == null) {
+        throw Exception('User not authenticated.');
       }
 
-      final messages = await ApiService.getMessages(_authProvider.backendToken);
-      _chatRooms = _convertMessagesToChatRooms(messages);
+      final chatRoomsData = await ChatService.getChatRooms(
+        _authProvider.jwtToken!,
+      );
+      _chatRooms =
+          chatRoomsData.map((data) => ChatRoom.fromJson(data)).toList();
+      _chatRooms.sort(
+        (a, b) => (b.lastMessageAt ?? b.createdAt).compareTo(
+          a.lastMessageAt ?? a.createdAt,
+        ),
+      );
     } catch (e) {
       _error = e.toString();
       _chatRooms = [];
@@ -67,122 +112,52 @@ class ChatListProvider extends ChangeNotifier {
     }
   }
 
-  List<ChatRoom> _convertMessagesToChatRooms(List<ApiMessage> messages) {
-    if (messages.isEmpty) return [];
-
-    Map<String, List<ApiMessage>> groupedMessages = {};
-    for (var message in messages) {
-      if (!groupedMessages.containsKey(message.chatRoomId)) {
-        groupedMessages[message.chatRoomId] = [];
-      }
-      groupedMessages[message.chatRoomId]!.add(message);
-    }
-
-    List<ChatRoom> chatRooms = [];
-    groupedMessages.forEach((chatRoomId, messageList) {
-      messageList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final latestMessage = messageList.first;
-      final unreadCount = messageList.where((m) => !m.isRead).length;
-
-      chatRooms.add(
-        ChatRoom(
-          id: chatRoomId,
-          productId: 'product_${chatRoomId.substring(0, 8)}',
-          productTitle: 'Product Chat',
-          productImage: 'assets/images/image-ads.jpg',
-          productPrice: 'Rp 0',
-          participantId: latestMessage.senderId,
-          participantName: 'User ${latestMessage.senderId.substring(0, 8)}',
-          participantAvatar: 'assets/images/avatar.png',
-          lastMessage: latestMessage.content,
-          lastMessageTime: latestMessage.createdAt,
-          unreadCount: unreadCount,
-          isOnline: false,
-        ),
-      );
-    });
-
-    chatRooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
-    return chatRooms;
-  }
-
-  Future<bool> sendMessage(String chatRoomId, String content) async {
-    try {
-      if (_authProvider.backendToken == null) {
-        throw Exception('User not authenticated. Please login again.');
-      }
-
-      return await ApiService.sendMessage(
-        chatRoomId: chatRoomId,
-        content: content,
-        authToken: _authProvider.backendToken,
-      );
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<void> refreshChatList() async {
-    _hasInitialized = false;
-    await fetchChatList();
-    _hasInitialized = true;
-  }
-
-  void updateLastMessage({
-    required String chatRoomId,
-    required String message,
-    required DateTime timestamp,
-    int unreadCount = 0,
-  }) {
-    final index = _chatRooms.indexWhere((room) => room.id == chatRoomId);
+  void _handleNewMessage(Message message) {
+    final index = _chatRooms.indexWhere(
+      (room) => room.id == message.chatRoomId,
+    );
     if (index != -1) {
-      final updatedRoom = ChatRoom(
-        id: _chatRooms[index].id,
-        productId: _chatRooms[index].productId,
-        productTitle: _chatRooms[index].productTitle,
-        productImage: _chatRooms[index].productImage,
-        productPrice: _chatRooms[index].productPrice,
-        participantId: _chatRooms[index].participantId,
-        participantName: _chatRooms[index].participantName,
-        participantAvatar: _chatRooms[index].participantAvatar,
-        lastMessage: message,
-        lastMessageTime: timestamp,
+      final room = _chatRooms[index];
+      final isCurrentUserSender = message.senderId == _profileProvider.user?.id;
+
+      // Only increment unread count if the message is from the other person.
+      final unreadCount =
+          isCurrentUserSender ? room.unreadCount : room.unreadCount + 1;
+
+      final updatedRoom = room.copyWith(
+        lastMessage: message.content,
+        lastMessageAt: message.timestamp,
         unreadCount: unreadCount,
-        isOnline: _chatRooms[index].isOnline,
       );
 
       _chatRooms.removeAt(index);
       _chatRooms.insert(0, updatedRoom);
       notifyListeners();
+    } else {
+      fetchChatList(forceRefresh: true);
     }
+  }
+
+  Future<void> refreshChatList() async {
+    await fetchChatList(forceRefresh: true);
   }
 
   void markAsRead(String chatRoomId) {
     final index = _chatRooms.indexWhere((room) => room.id == chatRoomId);
-    if (index != -1) {
-      final updatedRoom = ChatRoom(
-        id: _chatRooms[index].id,
-        productId: _chatRooms[index].productId,
-        productTitle: _chatRooms[index].productTitle,
-        productImage: _chatRooms[index].productImage,
-        productPrice: _chatRooms[index].productPrice,
-        participantId: _chatRooms[index].participantId,
-        participantName: _chatRooms[index].participantName,
-        participantAvatar: _chatRooms[index].participantAvatar,
-        lastMessage: _chatRooms[index].lastMessage,
-        lastMessageTime: _chatRooms[index].lastMessageTime,
-        unreadCount: 0,
-        isOnline: _chatRooms[index].isOnline,
-      );
-
-      _chatRooms[index] = updatedRoom;
+    if (index != -1 && _chatRooms[index].unreadCount > 0) {
+      _chatRooms[index] = _chatRooms[index].copyWith(unreadCount: 0);
       notifyListeners();
     }
   }
 
   int get totalUnreadCount {
     return _chatRooms.fold(0, (sum, room) => sum + room.unreadCount);
+  }
+
+  @override
+  void dispose() {
+    _authProvider.removeListener(_onAuthStateChanged);
+    disposeChatSystem();
+    super.dispose();
   }
 }

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:olx_clone/models/api_message.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://olx-api.azurewebsites.net';
+  static const String baseUrl = 'https://olx-api-production.up.railway.app';
 
   static Map<String, String> _getAuthHeaders(String? token) {
     final headers = {'Content-Type': 'application/json'};

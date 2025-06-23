@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
@@ -6,39 +5,15 @@ import 'package:olx_clone/utils/theme.dart';
 import 'package:provider/provider.dart';
 
 class InputOtp extends StatefulWidget {
-  final String? phoneNumber;
-  final String? email;
-  final String? verificationId;
   final String type;
 
-  const InputOtp({
-    super.key,
-    this.phoneNumber,
-    this.email,
-    this.verificationId,
-    required this.type,
-  });
+  const InputOtp({super.key, required this.type});
 
   @override
   State<InputOtp> createState() => _InputOtpState();
 }
 
 class _InputOtpState extends State<InputOtp> {
-  @override
-  void initState() {
-    super.initState();
-    // Setup OTP session di provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProviderApp>(context, listen: false);
-      authProvider.setupOtpSession(
-        phoneNumber: widget.phoneNumber,
-        email: widget.email,
-        verificationId: widget.verificationId,
-        type: widget.type,
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProviderApp>(
@@ -253,7 +228,6 @@ class _InputOtpState extends State<InputOtp> {
                                 ),
                               ),
 
-                              // Loading indicator - STATE DARI PROVIDER
                               if (authProvider.isVerifying)
                                 const Center(
                                   child: Padding(

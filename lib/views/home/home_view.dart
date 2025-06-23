@@ -22,16 +22,14 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     SystemUiOverlayStyle systemUiOverlayStyle = SystemUiOverlayStyle(
       statusBarColor: AppTheme.of(context).colors.primary,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.dark,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.light,
     );
-    return ChangeNotifierProvider(
-      create: (context) => HomeProvider(),
-      child: Consumer<HomeProvider>(
-        builder: (context, homeProvider, child) {
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: systemUiOverlayStyle,
-            child: GestureDetector(
+    return Consumer<HomeProvider>(
+      builder: (context, homeProvider, child) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: systemUiOverlayStyle,
+          child: GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
             },
@@ -100,10 +98,7 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     SliverCategoryWidget(),
                     SliverToBoxAdapter(
-                      child: Container(
-                        height: 12,
-                        color: Colors.grey[300],
-                      ),
+                      child: Container(height: 12, color: Colors.grey[300]),
                     ),
                     // Product Section Header
                     SliverToBoxAdapter(
@@ -120,14 +115,17 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                     ),
-                    // Product Grid
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: ProductGridWidget(itemCount: 20),
-                    ),                  ],                ),              ),            ),
-          ));
-        },
-      ),
+                      sliver: const ProductGridWidget(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -5,7 +5,6 @@ class Message {
   final String senderName;
   final String content;
   final DateTime timestamp;
-  final MessageType type;
   final bool isRead;
   final bool isSent;
 
@@ -16,11 +15,9 @@ class Message {
     required this.senderName,
     required this.content,
     required this.timestamp,
-    this.type = MessageType.text,
-    this.isRead = false,
+    required this.isRead,
     this.isSent = true,
   });
-
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'] ?? '',
@@ -29,17 +26,14 @@ class Message {
       senderName: json['senderName'] ?? '',
       content: json['content'] ?? '',
       timestamp: DateTime.parse(
-        json['timestamp'] ?? DateTime.now().toIso8601String(),
-      ),
-      type: MessageType.values.firstWhere(
-        (e) => e.toString().split('.').last == (json['type'] ?? 'text'),
-        orElse: () => MessageType.text,
+        json['createdAt'] ??
+            json['timestamp'] ??
+            DateTime.now().toIso8601String(),
       ),
       isRead: json['isRead'] ?? false,
       isSent: json['isSent'] ?? true,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -48,7 +42,6 @@ class Message {
       'senderName': senderName,
       'content': content,
       'timestamp': timestamp.toIso8601String(),
-      'type': type.toString().split('.').last,
       'isRead': isRead,
       'isSent': isSent,
     };
@@ -61,7 +54,6 @@ class Message {
     String? senderName,
     String? content,
     DateTime? timestamp,
-    MessageType? type,
     bool? isRead,
     bool? isSent,
   }) {
@@ -72,11 +64,8 @@ class Message {
       senderName: senderName ?? this.senderName,
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
-      type: type ?? this.type,
       isRead: isRead ?? this.isRead,
       isSent: isSent ?? this.isSent,
     );
   }
 }
-
-enum MessageType { text, image, system }

@@ -36,32 +36,33 @@ class HomeAppBar extends StatelessWidget {
                     children: [
                       Image.asset(AppAssets.olxBlueLogo, height: 50),
                       const Spacer(),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: onOfferTap,
-                            icon: Icon(
-                              Icons.local_offer_outlined,
-                              size: 22,
-                              color: AppTheme.of(context).colors.primary,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          IconButton(
-                            onPressed: onReceiptTap,
-                            icon: Icon(
-                              Icons.newspaper_outlined,
-                              size: 22,
-                              color: AppTheme.of(context).colors.primary,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          locationWidget,
-                        ],
-                      ),
+                      locationWidget,
+
+                      // Row(
+                      //   mainAxisSize: MainAxisSize.min,
+                      //   children: [
+                      //     // IconButton(
+                      //     //   onPressed: onOfferTap,
+                      //     //   icon: Icon(
+                      //     //     Icons.local_offer_outlined,
+                      //     //     size: 22,
+                      //     //     color: AppTheme.of(context).colors.primary,
+                      //     //   ),
+                      //     //   padding: const EdgeInsets.all(6),
+                      //     //   visualDensity: VisualDensity.compact,
+                      //     // ),
+                      //     // IconButton(
+                      //     //   onPressed: onReceiptTap,
+                      //     //   icon: Icon(
+                      //     //     Icons.newspaper_outlined,
+                      //     //     size: 22,
+                      //     //     color: AppTheme.of(context).colors.primary,
+                      //     //   ),
+                      //     //   padding: const EdgeInsets.all(6),
+                      //     //   visualDensity: VisualDensity.compact,
+                      //     // ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),
