@@ -470,6 +470,9 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
                           case 'edit':
                             _editProduct(context, product);
                             break;
+                          case 'activate':
+                            _activateProduct(context, product);
+                            break;
                           case 'deactivate':
                             _deactivateProduct(context, product);
                             break;
@@ -483,8 +486,11 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
                       iconSize: 20,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      itemBuilder:
-                          (context) => [
+                      itemBuilder: (context) {
+                        final items = <PopupMenuEntry<String>>[];
+
+                        if (product.isActive) {
+                          items.add(
                             const PopupMenuItem(
                               value: 'edit',
                               child: Row(
@@ -495,6 +501,8 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
                                 ],
                               ),
                             ),
+                          );
+                          items.add(
                             const PopupMenuItem(
                               value: 'deactivate',
                               child: Row(
@@ -508,17 +516,37 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
                                 ],
                               ),
                             ),
+                          );
+                        } else {
+                          items.add(
                             const PopupMenuItem(
-                              value: 'delete',
+                              value: 'activate',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, color: Colors.red),
+                                  Icon(Icons.visibility, color: Colors.green),
                                   SizedBox(width: 8),
-                                  Text('Hapus'),
+                                  Text('Aktifkan'),
                                 ],
                               ),
                             ),
-                          ],
+                          );
+                        }
+
+                        items.add(
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Hapus'),
+                              ],
+                            ),
+                          ),
+                        );
+
+                        return items;
+                      },
                     ),
                   ],
                 ),
@@ -566,24 +594,19 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildStatusBadge(product.status),
+                      _buildStatusBadge(product),
                       Expanded(
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: _buildStatusText(
-                            product.status,
-                            product.createdAt
-                                .add(const Duration(days: 30))
-                                .difference(DateTime.now())
-                                .inDays,
-                          ),
+                          child: _buildStatusText(product),
                         ),
                       ),
                     ],
                   ),
-                  if (product.status != ProductStatus.sold) ...[
+                  if (product.isActive &&
+                      product.status != ProductStatus.sold) ...[
                     const SizedBox(height: 16),
-                    _buildActionButtons(product.status),
+                    _buildActionButtons(product),
                   ],
                 ],
               ),
@@ -634,27 +657,33 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatusBadge(ProductStatus status) {
+  Widget _buildStatusBadge(Product product) {
     String text;
     Color borderColor;
     Color textColor;
 
-    switch (status) {
-      case ProductStatus.active:
-        text = 'AKTIF';
-        borderColor = const Color(0xffa1e0a1);
-        textColor = const Color(0xff0b640b);
-        break;
-      case ProductStatus.sold:
-        text = 'TERJUAL';
-        borderColor = Colors.grey;
-        textColor = Colors.black87;
-        break;
-      case ProductStatus.expired:
-        text = 'KADALUWARSA';
-        borderColor = Colors.grey;
-        textColor = Colors.black87;
-        break;
+    if (!product.isActive) {
+      text = 'NONAKTIF';
+      borderColor = Colors.grey;
+      textColor = Colors.black87;
+    } else {
+      switch (product.status) {
+        case ProductStatus.active:
+          text = 'AKTIF';
+          borderColor = const Color(0xffa1e0a1);
+          textColor = const Color(0xff0b640b);
+          break;
+        case ProductStatus.sold:
+          text = 'TERJUAL';
+          borderColor = Colors.grey;
+          textColor = Colors.black87;
+          break;
+        case ProductStatus.expired:
+          text = 'KADALUWARSA';
+          borderColor = Colors.grey;
+          textColor = Colors.black87;
+          break;
+      }
     }
 
     return Container(
@@ -673,12 +702,26 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatusText(ProductStatus status, int remainingDays) {
+  Widget _buildStatusText(Product product) {
     final style = AppTheme.of(context).textStyle.bodySmall.copyWith(
       color: AppTheme.of(context).colors.secondaryTextColor,
     );
 
-    switch (status) {
+    if (!product.isActive) {
+      return Text(
+        'Iklan ini tidak aktif',
+        style: style,
+        textAlign: TextAlign.right,
+      );
+    }
+
+    final remainingDays =
+        product.createdAt
+            .add(const Duration(days: 30))
+            .difference(DateTime.now())
+            .inDays;
+
+    switch (product.status) {
       case ProductStatus.active:
         return Text.rich(
           TextSpan(
@@ -716,7 +759,7 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildActionButtons(ProductStatus status) {
+  Widget _buildActionButtons(Product product) {
     final theme = AppTheme.of(context);
     return Row(
       children: [
@@ -739,7 +782,7 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
             ),
           ),
         ),
-        if (status == ProductStatus.active) ...[
+        if (product.status == ProductStatus.active) ...[
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
@@ -781,6 +824,63 @@ class _MyAdsViewState extends State<MyAdsView> with TickerProviderStateMixin {
         'product': product,
         'selectedCategory': category,
       },
+    );
+  }
+
+  void _activateProduct(BuildContext context, Product product) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            backgroundColor: AppTheme.of(context).colors.background,
+            title: const Text('Aktifkan Iklan'),
+            content: const Text(
+              'Apakah Anda yakin ingin mengaktifkan iklan ini?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final productProvider = context.read<ProductProvider>();
+
+                  navigator.pop();
+
+                  final success = await productProvider.activateProduct(
+                    product.id,
+                  );
+
+                  if (mounted) {
+                    if (success) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Iklan berhasil diaktifkan'),
+                        ),
+                      );
+                      _loadData();
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Gagal mengaktifkan iklan'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.of(context).colors.primary,
+                ),
+                child: const Text(
+                  'Aktifkan',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
     );
   }
 

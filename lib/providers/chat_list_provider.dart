@@ -53,13 +53,22 @@ class ChatListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String getOtherParticipantName(ChatRoom chatRoom) {
+    final currentUserId = _profileProvider.user?.id;
+    if (chatRoom.buyerId == currentUserId) {
+      return chatRoom.sellerName;
+    } else {
+      return chatRoom.buyerName;
+    }
+  }
+
   List<ChatRoom> getFilteredChatRooms(ChatFilterProvider filterProvider) {
     return filterProvider.getFilteredChats<ChatRoom>(
       _chatRooms,
       getType: (chat) => _determineChatType(chat),
       isImportant: (chat) => chat.unreadCount > 0,
       hasUnread: (chat) => chat.unreadCount > 0,
-      getParticipantName: (chat) => chat.buyerName,
+      getParticipantName: (chat) => getOtherParticipantName(chat),
       getProductTitle: (chat) => chat.productTitle,
     );
   }
@@ -109,8 +118,11 @@ class ChatListProvider extends ChangeNotifier {
     );
     if (index != -1) {
       final room = _chatRooms[index];
-      final isCurrentUserSender = room.buyerId == message.senderId;
-      final unreadCount = isCurrentUserSender ? 0 : room.unreadCount + 1;
+      final isCurrentUserSender = message.senderId == _profileProvider.user?.id;
+
+      // Only increment unread count if the message is from the other person.
+      final unreadCount =
+          isCurrentUserSender ? room.unreadCount : room.unreadCount + 1;
 
       final updatedRoom = room.copyWith(
         lastMessage: message.content,

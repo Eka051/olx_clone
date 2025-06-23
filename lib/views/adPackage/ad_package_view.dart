@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:olx_clone/models/ad_package.dart';
 import 'package:olx_clone/providers/ad_provider.dart';
+import 'package:olx_clone/models/product.dart';
 
 class AdPackageView extends StatefulWidget {
   const AdPackageView({super.key});
@@ -19,6 +20,7 @@ class _AdPackageViewState extends State<AdPackageView> {
       final provider = context.read<AdProvider>();
       provider.fetchAdPackages();
       provider.fetchCart();
+      provider.fetchMyProducts();
     });
   }
 
@@ -248,27 +250,8 @@ class _AdPackageViewState extends State<AdPackageView> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    await provider.addToCart(package);
-                    if (!mounted) return;
-
-                    if (provider.errorMessage == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${package.name} ditambahkan'),
-                          backgroundColor: const Color(0xFF00A49F),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(provider.errorMessage!),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
+                  onPressed: () {
+                    _showProductSelectionDialog(context, package, provider);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3A77FF),
@@ -293,6 +276,83 @@ class _AdPackageViewState extends State<AdPackageView> {
         ),
       ),
     );
+  }
+
+  Future<void> _showProductSelectionDialog(
+    BuildContext context,
+    AdPackage package,
+    AdProvider provider,
+  ) async {
+    final selectedProduct = await showDialog<Product>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Pilih Iklan'),
+          content: Consumer<AdProvider>(
+            builder: (context, adProvider, child) {
+              if (adProvider.isLoadingMyProducts) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (adProvider.myProducts.isEmpty) {
+                return const Text('Anda tidak punya iklan untuk dipromosikan.');
+              }
+              return SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: adProvider.myProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = adProvider.myProducts[index];
+                    return ListTile(
+                      title: Text(product.title),
+                      onTap: () {
+                        Navigator.of(dialogContext).pop(product);
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Batal'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedProduct != null) {
+      await provider.addToCart(package, selectedProduct.id);
+      if (!mounted) return;
+
+      if (provider.errorMessage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${package.name} ditambahkan untuk ${selectedProduct.title}',
+            ),
+            backgroundColor: const Color(0xFF00A49F),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage!),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   String _formatPrice(int price) {

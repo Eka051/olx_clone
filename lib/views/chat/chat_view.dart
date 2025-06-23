@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:olx_clone/models/chat_room.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/chat_filter_provider.dart';
 import 'package:olx_clone/providers/chat_list_provider.dart';
-import 'package:olx_clone/providers/auth_provider.dart';
-import 'package:olx_clone/models/chat_room.dart';
 import 'package:olx_clone/views/chat/chat_room_view.dart';
-import 'package:olx_clone/utils/const.dart';
-import 'package:olx_clone/utils/theme.dart';
+import 'package:provider/provider.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -113,19 +111,13 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         SizedBox(height: deviceHeight * 0.01),
                         SizedBox(
                           height: deviceHeight * 0.05,
-                          child: Image.asset(
-                            AppAssets.olxBlueLogo,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Text(
-                                'OLX Clone',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                  color: Colors.blue,
-                                ),
-                              );
-                            },
+                          child: const Text(
+                            'OLX Clone',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
                         SizedBox(height: deviceHeight * 0.02),
@@ -140,55 +132,52 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                bottom:
-                    _tabController != null
-                        ? TabBar(
-                          controller: _tabController,
-                          indicatorColor: AppTheme.of(context).colors.primary,
-                          labelColor: AppTheme.of(context).colors.primary,
-                          unselectedLabelColor: Colors.grey[600],
-                          indicatorWeight: 5.0,
-                          labelStyle: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          unselectedLabelStyle: theme.textTheme.titleSmall,
-                          tabs: const [
-                            Tab(text: 'SEMUA'),
-                            Tab(text: 'MEMBELI'),
-                            Tab(text: 'MENJUAL'),
-                          ],
-                        )
-                        : null,
+                bottom: _tabController != null
+                    ? TabBar(
+                        controller: _tabController,
+                        indicatorColor: Theme.of(context).colorScheme.primary,
+                        labelColor: Theme.of(context).colorScheme.primary,
+                        unselectedLabelColor: Colors.grey[600],
+                        indicatorWeight: 5.0,
+                        labelStyle: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        unselectedLabelStyle: theme.textTheme.titleSmall,
+                        tabs: const [
+                          Tab(text: 'SEMUA'),
+                          Tab(text: 'MEMBELI'),
+                          Tab(text: 'MENJUAL'),
+                        ],
+                      )
+                    : null,
               ),
             ),
-            body:
-                _tabController != null
-                    ? TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildChatListTab(
-                          context,
-                          chatListProvider,
-                          filterProvider,
-                          0,
-                        ),
-                        _buildChatListTab(
-                          context,
-                          chatListProvider,
-                          filterProvider,
-                          1,
-                        ),
-                        _buildChatListTab(
-                          context,
-                          chatListProvider,
-                          filterProvider,
-                          2,
-                        ),
-                      ],
-                    )
-                    : const Center(child: CircularProgressIndicator()),
-          ),
-        );
+            body: _tabController != null
+                ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildChatListTab(
+                        context,
+                        chatListProvider,
+                        filterProvider,
+                        0,
+                      ),
+                      _buildChatListTab(
+                        context,
+                        chatListProvider,
+                        filterProvider,
+                        1,
+                      ),
+                      _buildChatListTab(
+                        context,
+                        chatListProvider,
+                        filterProvider,
+                        2,
+                      ),
+                    ],
+                  )
+                : const Center(child: CircularProgressIndicator()),
+          ));
       },
     );
   }
@@ -199,14 +188,14 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     ChatFilterProvider filterProvider,
     int tabIndex,
   ) {
-    return _buildChatList(context, chatListProvider, filterProvider, tabIndex);
+    // This can be customized to filter chats based on tabIndex if needed
+    return _buildChatList(context, chatListProvider, filterProvider);
   }
 
   Widget _buildChatList(
     BuildContext context,
     ChatListProvider chatListProvider,
     ChatFilterProvider filterProvider,
-    int tabIndex,
   ) {
     if (chatListProvider.isLoading && !chatListProvider.hasInitialized) {
       return const Center(child: CircularProgressIndicator());
@@ -214,33 +203,35 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
 
     if (chatListProvider.error != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Terjadi kesalahan',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              chatListProvider.error!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => chatListProvider.refreshChatList(),
-              child: const Text('Coba Lagi'),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Gagal Memuat Obrolan',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tampaknya ada masalah di server kami. Silakan coba lagi nanti.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => chatListProvider.refreshChatList(),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -251,27 +242,15 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.chat_bubble_outline,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Colors.grey,
             ),
             const SizedBox(height: 16),
             Text(
-              chatListProvider.isEmptyButInitialized
-                  ? 'Belum ada chat'
-                  : 'Tidak ada chat yang sesuai',
+              'Belum ada chat',
               style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              chatListProvider.isEmptyButInitialized
-                  ? 'Chat akan muncul ketika Anda mengirim atau menerima pesan'
-                  : 'Coba ubah filter atau kata kunci pencarian',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -322,19 +301,19 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
               height: 56,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: colorScheme.surface,
+                color: colorScheme.surfaceContainer,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
-                  'assets/images/image-ads.jpg',
+                  'assets/images/image-ads.jpg', // Placeholder
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: colorScheme.surface,
+                      color: colorScheme.surfaceContainer,
                       child: Icon(
-                        Icons.image,
-                        color: colorScheme.onSurface.withOpacity(0.3),
+                        Icons.image_outlined,
+                        color: colorScheme.onSurfaceVariant.withAlpha(100),
                       ),
                     );
                   },
@@ -353,20 +332,17 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colorScheme.surface,
+                          color: colorScheme.surfaceContainer,
                         ),
                         child: ClipOval(
                           child: Image.asset(
                             'assets/images/avatar.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: colorScheme.surface,
-                                child: Icon(
-                                  Icons.person,
-                                  color: colorScheme.onSurface.withOpacity(0.3),
-                                  size: 16,
-                                ),
+                              return Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: colorScheme.onSurfaceVariant.withAlpha(150),
                               );
                             },
                           ),
@@ -375,10 +351,10 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          chatRoom.buyerName,
+                          chatListProvider.getOtherParticipantName(chatRoom),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: colorScheme.onBackground,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -390,7 +366,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                   Text(
                     chatRoom.productTitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onBackground.withOpacity(0.8),
+                      color: colorScheme.onSurface.withAlpha(200),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -402,19 +378,19 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                         child: Text(
                           chatRoom.lastMessage ?? '',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onBackground.withOpacity(0.6),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        _formatTime(chatRoom.lastMessageAt ?? DateTime.now()),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onBackground.withOpacity(0.5),
+                      if (chatRoom.lastMessageAt != null)
+                        Text(
+                          _formatTime(chatRoom.lastMessageAt!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withAlpha(150),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -423,20 +399,21 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
             const SizedBox(width: 12),
             if (chatRoom.unreadCount > 0)
               Container(
-                width: 20,
-                height: 20,
+                padding: const EdgeInsets.all(2),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                 decoration: BoxDecoration(
-                  color: colorScheme.error,
+                  color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Text(
                     chatRoom.unreadCount > 9 ? '9+' : '${chatRoom.unreadCount}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onError,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),

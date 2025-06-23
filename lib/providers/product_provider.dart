@@ -37,7 +37,7 @@ class ProductProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingLocation = false;
   bool _isSold = false;
-  final bool _isActive = true;
+  bool _isActive = true;
   bool _shouldRefreshMyAds = false;
   String? _lastError;
 
@@ -323,6 +323,8 @@ class ProductProvider extends ChangeNotifier {
     _title = product.title;
     _description = product.description;
     _price = product.price.toDouble();
+    _isSold = product.status == ProductStatus.sold;
+    _isActive = product.isActive;
 
     if (product.categoryId == 0 || product.categoryName.isEmpty) {
       _category = null;
@@ -339,11 +341,13 @@ class ProductProvider extends ChangeNotifier {
     _address =
         '${product.districtName}, ${product.cityName}, ${product.provinceName}';
 
+    // TODO: Use actual coordinates from product if available
     _latitude = -6.2088;
     _longitude = 106.8456;
 
     _images.clear();
     _originalImages = List.from(product.images);
+    notifyListeners();
   }
 
   bool get shouldShowPrice {
@@ -679,6 +683,37 @@ class ProductProvider extends ChangeNotifier {
         return true;
       } else {
         throw Exception('Failed to update product: ${response.body}');
+      }
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> activateProduct(int productId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      final token = _authProvider.jwtToken;
+      if (token == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final response = await http.patch(
+        Uri.parse('$_apiBaseUrl/products/$productId/activate'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        throw Exception('Failed to activate product: ${response.body}');
       }
     } catch (e) {
       _isLoading = false;

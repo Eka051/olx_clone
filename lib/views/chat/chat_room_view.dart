@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:olx_clone/utils/theme.dart';
-import 'package:olx_clone/providers/chat_room_provider.dart';
-import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/models/chat_room.dart';
 import 'package:olx_clone/models/message.dart';
 import 'package:olx_clone/models/product.dart';
+import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/chat_room_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
+import 'package:olx_clone/utils/theme.dart';
 
 class ChatRoomView extends StatefulWidget {
   final ChatRoom chatRoom;
@@ -61,20 +63,19 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: Scaffold(
         backgroundColor: AppTheme.of(context).colors.background,
-        appBar: _buildAppBar(context, deviceWidth, deviceHeight),
+        appBar: _buildAppBar(
+          context,
+          deviceWidth,
+          deviceHeight,
+        ),
         body: Consumer<ChatRoomProvider>(
           builder: (context, chatProvider, child) {
             return Column(
               children: [
-                // Product Info Header
                 _buildProductHeader(context, deviceWidth),
-
-                // Messages Area
                 Expanded(
                   child: _buildMessagesArea(context, chatProvider, deviceWidth),
                 ),
-
-                // Message Input
                 _buildMessageInput(
                   context,
                   chatProvider,
@@ -94,6 +95,22 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceWidth,
     double deviceHeight,
   ) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final currentUser = profileProvider.user;
+
+    String otherUserName = "Loading...";
+    String? otherUserAvatar;
+
+    if (currentUser != null) {
+      if (currentUser.id == widget.chatRoom.buyerId) {
+        otherUserName = widget.chatRoom.sellerName;
+        otherUserAvatar = widget.chatRoom.sellerProfilePicture;
+      } else {
+        otherUserName = widget.chatRoom.buyerName;
+        otherUserAvatar = widget.chatRoom.buyerProfilePicture;
+      }
+    }
+
     return PreferredSize(
       preferredSize: Size.fromHeight(deviceHeight * 0.07),
       child: AppBar(
@@ -109,25 +126,26 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             CircleAvatar(
               radius: deviceWidth * 0.05,
               backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: AssetImage('assets/images/avatar.png'),
+              backgroundImage: (otherUserAvatar != null &&
+                      otherUserAvatar.isNotEmpty)
+                  ? NetworkImage(otherUserAvatar)
+                  : const AssetImage('assets/images/avatar.png')
+                      as ImageProvider,
               onBackgroundImageError: (_, __) {},
-              child: null,
             ),
             SizedBox(width: deviceWidth * 0.03),
-
-            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.chatRoom.sellerName,
+                    otherUserName,
                     style: AppTheme.of(context).textStyle.titleMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: deviceWidth * 0.042,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: deviceWidth * 0.042,
+                        ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -137,15 +155,11 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              // Add call functionality
-            },
+            onPressed: () {},
             icon: const Icon(Icons.call, color: Colors.white),
           ),
           IconButton(
-            onPressed: () {
-              // Add more options
-            },
+            onPressed: () {},
             icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
           SizedBox(width: deviceWidth * 0.02),
@@ -273,62 +287,39 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceWidth,
   ) {
     if (chatProvider.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: AppTheme.of(context).colors.primary,
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (chatProvider.error != null && chatProvider.messages.isEmpty) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.all(deviceWidth * 0.08),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: deviceWidth * 0.15,
-                color: Colors.grey[400],
-              ),
-              SizedBox(height: deviceWidth * 0.04),
-              Text(
-                'Gagal memuat pesan',
-                style: AppTheme.of(context).textStyle.titleMedium.copyWith(
-                  color: AppTheme.of(context).colors.primaryTextColor,
-                ),
-              ),
-              SizedBox(height: deviceWidth * 0.02),
-              ElevatedButton(
-                onPressed: () {
-                  final authProvider = context.read<AuthProviderApp>();
-                  if (authProvider.jwtToken != null) {
-                    chatProvider.fetchMessages(widget.chatRoom.id);
-                  }
-                },
-                child: const Text('Coba Lagi'),
-              ),
-            ],
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            'Gagal memuat pesan: ${chatProvider.error}',
+            textAlign: TextAlign.center,
           ),
         ),
       );
     }
 
+    final currentUserId = context.watch<ProfileProvider>().user?.id;
+
+    if (currentUserId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
     return ListView.builder(
       controller: _scrollController,
       padding: EdgeInsets.symmetric(
         horizontal: deviceWidth * 0.04,
-        vertical: deviceWidth * 0.02,
+        vertical: 20,
       ),
       itemCount: chatProvider.messages.length,
       itemBuilder: (context, index) {
         final message = chatProvider.messages[index];
-        final authProvider = context.read<AuthProviderApp>();
-        final isMe =
-            message.senderId ==
-            (authProvider.currentFirebaseUser?.uid ?? 'current_user');
-
+        final bool isMe = message.senderId == currentUserId;
         return _buildMessageBubble(context, message, isMe, deviceWidth);
       },
     );
@@ -340,96 +331,66 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     bool isMe,
     double deviceWidth,
   ) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: deviceWidth * 0.01),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: deviceWidth * 0.04,
-              backgroundColor: Colors.grey[300],
-              backgroundImage: AssetImage('assets/images/avatar.png'),
-              onBackgroundImageError: (_, __) {},
-              child: null,
-            ),
-            SizedBox(width: deviceWidth * 0.02),
-          ],
+    final theme = AppTheme.of(context);
+    final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor = isMe ? theme.colors.primary : Colors.white;
+    final textColor = isMe ? Colors.white : Colors.black87;
+    final timeColor = isMe ? Colors.white70 : Colors.black54;
 
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: deviceWidth * 0.75),
-              padding: EdgeInsets.symmetric(
-                horizontal: deviceWidth * 0.04,
-                vertical: deviceWidth * 0.03,
-              ),
-              decoration: BoxDecoration(
-                color:
-                    isMe
-                        ? AppTheme.of(context).colors.primary
-                        : Colors.grey[100],
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.content,
-                    style: AppTheme.of(context).textStyle.bodyMedium.copyWith(
-                      color:
-                          isMe
-                              ? Colors.white
-                              : AppTheme.of(context).colors.primaryTextColor,
-                      fontSize: deviceWidth * 0.038,
-                    ),
-                  ),
-                  SizedBox(height: deviceWidth * 0.01),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatMessageTime(message.timestamp),
-                        style: AppTheme.of(
-                          context,
-                        ).textStyle.bodySmall.copyWith(
-                          color:
-                              isMe
-                                  ? Colors.white.withOpacity(0.7)
-                                  : AppTheme.of(
-                                    context,
-                                  ).colors.secondaryTextColor,
-                          fontSize: deviceWidth * 0.028,
-                        ),
-                      ),
-                      if (isMe) ...[
-                        SizedBox(width: deviceWidth * 0.01),
-                        Icon(
-                          message.isSent
-                              ? (message.isRead ? Icons.done_all : Icons.done)
-                              : Icons.access_time,
-                          size: deviceWidth * 0.035,
-                          color:
-                              message.isRead
-                                  ? Colors.blue[300]
-                                  : Colors.white.withOpacity(0.7),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
+    return Align(
+      alignment: alignment,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: deviceWidth * 0.75),
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft:
+                isMe ? const Radius.circular(18) : const Radius.circular(4),
+            bottomRight:
+                isMe ? const Radius.circular(4) : const Radius.circular(18),
           ),
-
-          if (isMe) SizedBox(width: deviceWidth * 0.02),
-        ],
+          boxShadow: [
+            if (!isMe)
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.content,
+              style: theme.textStyle.bodyMedium.copyWith(color: textColor),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatMessageTime(message.timestamp.toLocal()),
+                  style: theme.textStyle.bodySmall.copyWith(
+                    color: timeColor,
+                    fontSize: deviceWidth * 0.03,
+                  ),
+                ),
+                if (isMe) SizedBox(width: deviceWidth * 0.01),
+                if (isMe)
+                  Icon(
+                    message.isRead ? Icons.done_all : Icons.done,
+                    color: message.isRead ? Colors.lightBlueAccent : timeColor,
+                    size: deviceWidth * 0.035,
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -441,7 +402,8 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     double deviceHeight,
   ) {
     return Container(
-      padding: EdgeInsets.all(deviceWidth * 0.04),
+      padding: EdgeInsets.fromLTRB(deviceWidth * 0.02, deviceWidth * 0.02,
+          deviceWidth * 0.02, deviceWidth * 0.04),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -455,23 +417,16 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       ),
       child: SafeArea(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Attachment button
-            Container(
-              margin: EdgeInsets.only(right: deviceWidth * 0.02),
-              child: IconButton(
-                onPressed: () {
-                  // Add attachment functionality
-                },
-                icon: Icon(
-                  Icons.attach_file,
-                  color: AppTheme.of(context).colors.secondary,
-                  size: deviceWidth * 0.06,
-                ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.attach_file,
+                color: AppTheme.of(context).colors.secondary,
+                size: deviceWidth * 0.06,
               ),
             ),
-
-            // Text input
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -482,64 +437,44 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   controller: chatProvider.messageController,
                   decoration: InputDecoration(
                     hintText: 'Ketik pesan...',
-                    hintStyle: AppTheme.of(
-                      context,
-                    ).textStyle.bodyMedium.copyWith(
-                      color: AppTheme.of(context).colors.hintTextColor,
-                    ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: deviceWidth * 0.04,
-                      vertical: deviceWidth * 0.03,
+                      vertical: deviceWidth * 0.025,
                     ),
                   ),
-                  style: AppTheme.of(
-                    context,
-                  ).textStyle.bodyMedium.copyWith(fontSize: deviceWidth * 0.04),
-                  maxLines: 4,
-                  minLines: 1,
                   textCapitalization: TextCapitalization.sentences,
-                  onSubmitted: (_) {
-                    chatProvider.sendMessage();
-                    _scrollToBottom();
+                  maxLines: null,
+                  onSubmitted: (value) {
+                    final message =
+                        chatProvider.messageController.text.trim();
+                    if (message.isNotEmpty) {
+                      chatProvider.sendMessage(message);
+                      _scrollToBottom();
+                    }
                   },
                 ),
               ),
             ),
-
-            // Send button
-            Container(
-              margin: EdgeInsets.only(left: deviceWidth * 0.02),
-              child:
-                  chatProvider.isSending
-                      ? SizedBox(
-                        width: deviceWidth * 0.06,
-                        height: deviceWidth * 0.06,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppTheme.of(context).colors.primary,
-                        ),
-                      )
-                      : IconButton(
-                        onPressed: () {
-                          chatProvider.sendMessage();
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _scrollToBottom();
-                          });
-                        },
-                        icon: Container(
-                          padding: EdgeInsets.all(deviceWidth * 0.025),
-                          decoration: BoxDecoration(
-                            color: AppTheme.of(context).colors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.send,
-                            color: Colors.white,
-                            size: deviceWidth * 0.05,
-                          ),
-                        ),
-                      ),
+            SizedBox(width: deviceWidth * 0.02),
+            InkWell(
+              onTap: () {
+                final message = chatProvider.messageController.text.trim();
+                if (message.isNotEmpty) {
+                  chatProvider.sendMessage(message);
+                  _scrollToBottom();
+                }
+              },
+              borderRadius: BorderRadius.circular(24),
+              child: CircleAvatar(
+                radius: deviceWidth * 0.06,
+                backgroundColor: AppTheme.of(context).colors.primary,
+                child: Icon(
+                  Icons.send,
+                  color: Colors.white,
+                  size: deviceWidth * 0.055,
+                ),
+              ),
             ),
           ],
         ),
@@ -548,19 +483,6 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   }
 
   String _formatMessageTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-
-    if (messageDate == today) {
-      // Today - show time only
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      // Yesterday
-      return 'Kemarin ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      // Other days - show date and time
-      return '${dateTime.day}/${dateTime.month} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    }
+    return DateFormat('HH:mm').format(dateTime);
   }
 }

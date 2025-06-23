@@ -17,6 +17,7 @@ class Product {
   final String userId;
   final String sellerId;
   final String sellerName;
+  final bool isActive;
 
   Product({
     required this.id,
@@ -35,6 +36,7 @@ class Product {
     required this.userId,
     required this.sellerId,
     required this.sellerName,
+    required this.isActive,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,7 @@ class Product {
       userId: json['userId'] ?? '',
       sellerId: json['sellerId'] ?? '',
       sellerName: json['sellerName'] ?? '',
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -79,6 +82,7 @@ class Product {
       'userId': userId,
       'sellerId': sellerId,
       'sellerName': sellerName,
+      'isActive': isActive,
     };
   }
 

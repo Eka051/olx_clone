@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:olx_clone/models/ad_package.dart';
+import 'package:olx_clone/models/product.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -50,7 +51,9 @@ class AdProvider extends ChangeNotifier {
 
   List<AdPackage> _packages = [];
   List<CartItem> _cartItems = [];
+  List<Product> _myProducts = [];
   bool _isLoading = false;
+  bool _isLoadingMyProducts = false;
   String? _errorMessage;
   int _selectedFilterIndex = 0;
 
@@ -62,7 +65,9 @@ class AdProvider extends ChangeNotifier {
 
   List<AdPackage> get packages => _packages;
   List<CartItem> get cartItems => _cartItems;
+  List<Product> get myProducts => _myProducts;
   bool get isLoading => _isLoading;
+  bool get isLoadingMyProducts => _isLoadingMyProducts;
   String? get errorMessage => _errorMessage;
   int get selectedFilterIndex => _selectedFilterIndex;
   int get cartItemCount =>
@@ -73,17 +78,17 @@ class AdProvider extends ChangeNotifier {
   void setFilterIndex(int index) {
     _selectedFilterIndex = index;
     notifyListeners();
-  }  Future<void> fetchAdPackages() async {
+  }
+
+  Future<void> fetchAdPackages() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       print('Fetching ad packages from: $_apiBaseUrl/adPackage');
-      
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
+
+      final headers = <String, String>{'Content-Type': 'application/json'};
 
       if (_authProvider.isLoggedIn && _authProvider.jwtToken != null) {
         headers['Authorization'] = 'Bearer ${_authProvider.jwtToken}';
@@ -91,7 +96,7 @@ class AdProvider extends ChangeNotifier {
       } else {
         print('No token available - fetching without auth');
       }
-      
+
       final response = await http.get(
         Uri.parse('$_apiBaseUrl/adPackage'),
         headers: headers,
@@ -102,11 +107,12 @@ class AdProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        
+
         if (data['success'] == true && data['data'] != null) {
           if (data['data'] is List) {
             final List<dynamic> packagesJson = data['data'];
-            _packages = packagesJson.map((json) => AdPackage.fromJson(json)).toList();
+            _packages =
+                packagesJson.map((json) => AdPackage.fromJson(json)).toList();
             print('Successfully loaded ${_packages.length} ad packages');
           } else {
             _errorMessage = 'Format data tidak sesuai - data bukan array';
@@ -118,13 +124,51 @@ class AdProvider extends ChangeNotifier {
         _errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
         print('Authentication failed - token may be expired');
       } else {
-        _errorMessage = 'Gagal memuat data paket iklan. Status: ${response.statusCode}';
+        _errorMessage =
+            'Gagal memuat data paket iklan. Status: ${response.statusCode}';
       }
     } catch (e) {
       print('Error fetching ad packages: $e');
       _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchMyProducts() async {
+    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
+      return;
+    }
+
+    _isLoadingMyProducts = true;
+    notifyListeners();
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_apiBaseUrl/me/products'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${_authProvider.jwtToken}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data['success'] == true && data['data'] is List) {
+          final List<dynamic> productsJson = data['data'];
+          _myProducts =
+              productsJson.map((json) => Product.fromJson(json)).toList();
+        } else {
+          _errorMessage = data['message'] ?? 'Gagal memuat produk saya';
+        }
+      } else {
+        _errorMessage = 'Gagal memuat produk. Status: ${response.statusCode}';
+      }
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
+    } finally {
+      _isLoadingMyProducts = false;
       notifyListeners();
     }
   }
@@ -156,7 +200,7 @@ class AdProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addToCart(AdPackage package, {int? productId}) async {
+  Future<void> addToCart(AdPackage package, int productId) async {
     if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
       _errorMessage = 'Silakan login terlebih dahulu';
       notifyListeners();
@@ -164,13 +208,14 @@ class AdProvider extends ChangeNotifier {
     }
 
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
       final requestBody = {
         'adPackageId': package.id,
+        'productId': productId,
         'quantity': 1,
-        if (productId != null) 'productId': productId,
       };
 
       final response = await http.post(

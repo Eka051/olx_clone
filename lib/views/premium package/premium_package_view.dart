@@ -510,7 +510,6 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
         );
 
         if (result == 'success' && mounted) {
-          // Show loading while verifying payment
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -530,16 +529,13 @@ class _PremiumPackageViewState extends State<PremiumPackageView> {
                 ),
           );
 
-          // Verify payment with backend
           final paymentVerified = await provider.verifyPaymentSuccess(
             provider.selectedPackage!.id,
           );
 
-          // Close loading dialog
           if (mounted) Navigator.of(context).pop();
 
           if (paymentVerified && mounted) {
-            // Refresh profile from server to get latest data
             final profileProvider = context.read<ProfileProvider>();
             await profileProvider.refreshProfileAfterPremiumUpgrade();
 
