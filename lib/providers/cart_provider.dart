@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:olx_clone/models/cart_item.dart';
+import 'package:olx_clone/models/ad_package.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/ad_provider.dart';
 import 'package:olx_clone/views/adPackage/cart_view.dart';
 import 'package:olx_clone/views/payment/payment_webview.dart';
 
@@ -13,6 +15,7 @@ class CartProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   int _cartTotalPrice = 0;
+  AdProvider? _adProvider;
 
   List<CartItem> get cartItems => _cartItems;
   bool get isLoading => _isLoading;
@@ -30,6 +33,10 @@ class CartProvider with ChangeNotifier {
       _cartTotalPrice = 0;
       notifyListeners();
     }
+  }
+
+  void setAdProvider(AdProvider adProvider) {
+    _adProvider = adProvider;
   }
 
   void _calculateTotals() {
@@ -59,7 +66,33 @@ class CartProvider with ChangeNotifier {
         } else if (data['data'] is Map && data['data']['cartItems'] is List) {
           cartData = data['data']['cartItems'];
         }
-        _cartItems = cartData.map((item) => CartItem.fromJson(item)).toList();
+        // DEBUG: Print cartData
+        debugPrint('cartData: ' + cartData.toString());
+        _cartItems =
+            cartData.map((item) {
+              int price = item['totalPrice'] ?? item['adPackagePrice'] ?? item['price'] ?? 0;
+              // Jika harga tetap 0, coba ambil dari AdProvider
+              if (price == 0 && _adProvider != null) {
+                final adPkg = _adProvider!.adPackages.firstWhere(
+                  (pkg) => pkg.id == item['adPackageId'],
+                  orElse: () => null,
+                );
+                if (adPkg != null && adPkg.price != null) {
+                  price = adPkg.price!;
+                }
+              }
+              debugPrint('[CartProvider] CartItem id: \\${item['id']} price: \\${price}');
+              return CartItem(
+                id: item['id']?.toString() ?? '',
+                adPackageId: item['adPackageId'] ?? 0,
+                productId: item['productId'] ?? 0,
+                adPackageName: item['adPackageName'] ?? '',
+                quantity: item['quantity'] ?? 1,
+                totalPrice: price,
+              );
+            }).toList();
+        // DEBUG: Print mapped _cartItems
+        debugPrint('_cartItems: ' + _cartItems.map((e) => e.toString()).toList().toString());
         _calculateTotals();
       } else {
         final errorData = json.decode(response.body);
@@ -161,7 +194,7 @@ class CartProvider with ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/payment/checkout'),
+        Uri.parse('$_baseUrl/payments/cart/checkout'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
@@ -170,6 +203,10 @@ class CartProvider with ChangeNotifier {
           'cartItemIds': _cartItems.map((item) => item.id).toList(),
         }),
       );
+
+      // DEBUG: Print status code and response body
+      debugPrint('CHECKOUT status: \\${response.statusCode}');
+      debugPrint('CHECKOUT body: \\${response.body}');
 
       if (response.statusCode == 200) {
         if (response.body.isEmpty) {
@@ -188,7 +225,8 @@ class CartProvider with ChangeNotifier {
           }
         }
       } else {
-        final errorData = response.body.isNotEmpty ? json.decode(response.body) : {};
+        final errorData =
+            response.body.isNotEmpty ? json.decode(response.body) : {};
         _errorMessage = errorData['message'] ?? 'Gagal membuat pesanan.';
       }
     } catch (e) {

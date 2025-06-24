@@ -16,17 +16,14 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    // Coba ambil totalPrice, price, atau hitung manual jika tidak ada
+    // Ambil harga dari adPackagePrice, price, totalPrice, atau fallback 0
     int price = 0;
-    if (json.containsKey('totalPrice')) {
+    if (json['totalPrice'] != null) {
       price = json['totalPrice'] ?? 0;
-    } else if (json.containsKey('price')) {
-      price = json['price'] ?? 0;
-    } else if (json.containsKey('adPackagePrice')) {
+    } else if (json['adPackagePrice'] != null) {
       price = json['adPackagePrice'] ?? 0;
-    }
-    if (price == 0 && json['quantity'] != null && json['adPackagePrice'] != null) {
-      price = (json['adPackagePrice'] ?? 0) * (json['quantity'] ?? 1);
+    } else if (json['price'] != null) {
+      price = json['price'] ?? 0;
     }
     return CartItem(
       id: json['id']?.toString() ?? '',

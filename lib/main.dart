@@ -127,6 +127,15 @@ void main() async {
             return previous;
           },
         ),
+        ChangeNotifierProxyProvider2<AdProvider, AuthProviderApp, CartProvider>(
+          create: (context) => CartProvider(),
+          update: (context, adProvider, auth, previous) {
+            previous ??= CartProvider();
+            previous.setAdProvider(adProvider);
+            previous.updateAuth(auth);
+            return previous;
+          },
+        ),
       ],
       child: const OlxClone(),
     ),
