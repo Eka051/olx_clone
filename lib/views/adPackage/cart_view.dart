@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:olx_clone/providers/ad_provider.dart';
+import 'package:olx_clone/providers/cart_provider.dart';
 import 'package:olx_clone/models/cart_item.dart';
-import 'package:olx_clone/views/payment/payment_webview.dart';
 
 class CartView extends StatefulWidget {
   const CartView({super.key});
@@ -13,19 +12,17 @@ class CartView extends StatefulWidget {
 }
 
 class _CartViewState extends State<CartView> {
-  bool _isProcessingPayment = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdProvider>().fetchCart();
+      context.read<CartProvider>().fetchCart();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final adProvider = context.watch<AdProvider>();
+    final cartProvider = context.watch<CartProvider>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -41,28 +38,28 @@ class _CartViewState extends State<CartView> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF002F34),
         elevation: 1,
-        shadowColor: Colors.grey.withOpacity(0.2),
+        shadowColor: Colors.grey.withAlpha(30),
       ),
       body:
-          adProvider.isLoading && adProvider.cartItems.isEmpty
+          cartProvider.isLoading && cartProvider.cartItems.isEmpty
               ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFF002F34)),
               )
-              : adProvider.cartItems.isEmpty
+              : cartProvider.cartItems.isEmpty
               ? _buildEmptyCart()
               : Column(
                 children: [
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                      itemCount: adProvider.cartItems.length,
+                      itemCount: cartProvider.cartItems.length,
                       itemBuilder: (context, index) {
-                        final cartItem = adProvider.cartItems[index];
-                        return _buildCartItem(cartItem, adProvider);
+                        final cartItem = cartProvider.cartItems[index];
+                        return _buildCartItem(cartItem, cartProvider);
                       },
                     ),
                   ),
-                  _buildBottomSection(adProvider),
+                  _buildBottomSection(cartProvider),
                 ],
               ),
     );
@@ -89,7 +86,7 @@ class _CartViewState extends State<CartView> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Ayo, temukan paket iklan terbaik untuk Anda!',
+            'Ayo, temukan paket iklan atau produk terbaik!',
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
@@ -103,18 +100,18 @@ class _CartViewState extends State<CartView> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Lihat Paket Iklan'),
+            child: const Text('Kembali Belanja'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCartItem(CartItem cartItem, AdProvider adProvider) {
+  Widget _buildCartItem(CartItem cartItem, CartProvider cartProvider) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shadowColor: Colors.grey.withOpacity(0.1),
+      shadowColor: Colors.grey.withAlpha(20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -145,51 +142,15 @@ class _CartViewState extends State<CartView> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    _buildQuantityButton(
-                      icon: Icons.remove,
-                      onPressed:
-                          cartItem.quantity > 1
-                              ? () => adProvider.updateCartItemQuantity(
-                                cartItem.id,
-                                cartItem.quantity - 1,
-                              )
-                              : null,
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        cartItem.quantity.toString(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF002F34),
-                        ),
-                      ),
-                    ),
-                    _buildQuantityButton(
-                      icon: Icons.add,
-                      onPressed:
-                          () => adProvider.updateCartItemQuantity(
-                            cartItem.id,
-                            cartItem.quantity + 1,
-                          ),
-                    ),
-                  ],
-                ),
-                TextButton.icon(
-                  onPressed: () => adProvider.removeFromCart(cartItem.id),
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  label: const Text('Hapus'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red[700]),
-                ),
-              ],
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => cartProvider.removeFromCart(cartItem.id.toString()),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: const Text('Hapus'),
+                style: TextButton.styleFrom(foregroundColor: Colors.red[700]),
+              ),
             ),
           ],
         ),
@@ -197,30 +158,7 @@ class _CartViewState extends State<CartView> {
     );
   }
 
-  Widget _buildQuantityButton({
-    required IconData icon,
-    VoidCallback? onPressed,
-  }) {
-    return Material(
-      color: Colors.grey[200],
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: const BoxDecoration(shape: BoxShape.circle),
-          child: Icon(
-            icon,
-            size: 20,
-            color: onPressed != null ? const Color(0xFF002F34) : Colors.grey,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomSection(AdProvider adProvider) {
+  Widget _buildBottomSection(CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.all(16).copyWith(bottom: 24),
       decoration: BoxDecoration(
@@ -249,7 +187,7 @@ class _CartViewState extends State<CartView> {
                 ),
               ),
               Text(
-                'Rp ${_formatPrice(adProvider.cartTotalPrice)}',
+                'Rp ${_formatPrice(cartProvider.cartTotalPrice)}',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -263,9 +201,11 @@ class _CartViewState extends State<CartView> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed:
-                  (_isProcessingPayment || adProvider.isLoading)
+                  (cartProvider.isLoading || cartProvider.cartItems.isEmpty)
                       ? null
-                      : () => _processCheckout(adProvider),
+                      : () {
+                        context.read<CartProvider>().processCheckout(context);
+                      },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF002F34),
                 foregroundColor: Colors.white,
@@ -276,7 +216,7 @@ class _CartViewState extends State<CartView> {
                 elevation: 2,
               ),
               child:
-                  _isProcessingPayment
+                  cartProvider.isLoading
                       ? const SizedBox(
                         height: 24,
                         width: 24,
@@ -301,83 +241,6 @@ class _CartViewState extends State<CartView> {
     );
   }
 
-  Future<void> _processCheckout(AdProvider adProvider) async {
-    setState(() => _isProcessingPayment = true);
-
-    try {
-      final int currentTotal = adProvider.cartTotalPrice;
-      final checkoutData = await adProvider.createCheckout();
-
-      if (checkoutData != null && mounted) {
-        final String paymentUrl =
-            checkoutData['redirectUrl'] ?? checkoutData['paymentUrl'] ?? '';
-        final String invoice = checkoutData['invoice'] ?? '';
-
-        if (paymentUrl.isEmpty || invoice.isEmpty) {
-          _showErrorDialog('Data pembayaran tidak valid.');
-          return;
-        }
-
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => PaymentWebview(
-                  paymentUrl: paymentUrl,
-                  finishUrl: 'https://your-finish-url.com/',
-                ),
-          ),
-        );
-
-        if (result == 'success') {
-          await adProvider.clearCart();
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => PaymentResultView(
-                      invoiceNumber: invoice,
-                      totalAmount: currentTotal,
-                    ),
-              ),
-            );
-          }
-        } else {
-          _showErrorDialog(
-            'Pembayaran gagal, dibatalkan, atau jendela ditutup.',
-          );
-        }
-      } else if (mounted) {
-        _showErrorDialog(adProvider.errorMessage ?? 'Gagal membuat pesanan');
-      }
-    } catch (e) {
-      if (mounted) _showErrorDialog('Terjadi kesalahan: e.toString()}');
-    } finally {
-      if (mounted) setState(() => _isProcessingPayment = false);
-    }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Terjadi Kesalahan'),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(color: Color(0xFF002F34)),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
   String _formatPrice(int price) {
     return NumberFormat.currency(
       locale: 'id_ID',
@@ -388,21 +251,38 @@ class _CartViewState extends State<CartView> {
 }
 
 class PaymentResultView extends StatelessWidget {
-  final String invoiceNumber;
+  final bool isSuccess;
   final int totalAmount;
+
   const PaymentResultView({
     super.key,
-    required this.invoiceNumber,
+    required this.isSuccess,
     required this.totalAmount,
   });
 
+  String _formatPrice(int price) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: '',
+      decimalDigits: 0,
+    ).format(price);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final Color color = isSuccess ? Colors.green : Colors.red;
+    final IconData icon =
+        isSuccess ? Icons.check_circle_outline : Icons.error_outline;
+    final String title = isSuccess ? 'Pembayaran Berhasil' : 'Pembayaran Gagal';
+    final String message = isSuccess
+        ? 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} telah kami terima.'
+        : 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} tidak dapat diproses. Silakan coba lagi atau hubungi dukungan.';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Pembayaran Berhasil',
-          style: TextStyle(
+        title: Text(
+          title,
+          style: const TextStyle(
             color: Color(0xFF002F34),
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -412,6 +292,7 @@ class PaymentResultView extends StatelessWidget {
         foregroundColor: const Color(0xFF002F34),
         elevation: 1,
         shadowColor: Colors.grey.withOpacity(0.2),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Padding(
@@ -420,15 +301,15 @@ class PaymentResultView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: Colors.green,
+              Icon(
+                icon,
+                color: color,
                 size: 80,
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Pembayaran Berhasil',
-                style: TextStyle(
+              Text(
+                title,
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF002F34),
@@ -436,18 +317,14 @@ class PaymentResultView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Invoice: $invoiceNumber',
+                message,
+                textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Color(0xFF002F34)),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Total: Rp ${''}',
-                style: TextStyle(fontSize: 16, color: Color(0xFF002F34)),
               ),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed:
-                    () => Navigator.popUntil(context, (route) => route.isFirst),
+                onPressed: () =>
+                    Navigator.popUntil(context, (route) => route.isFirst),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF002F34),
                   foregroundColor: Colors.white,
@@ -471,3 +348,4 @@ class PaymentResultView extends StatelessWidget {
     );
   }
 }
+

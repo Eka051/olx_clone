@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:olx_clone/firebase_options.dart';
+import 'package:olx_clone/providers/cart_provider.dart';
 import 'package:olx_clone/providers/notification_provider.dart';
 import 'package:olx_clone/utils/firebase_config.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
@@ -51,6 +52,14 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AuthProviderApp()),
         ChangeNotifierProvider(create: (context) => CategoryProvider()),
         ChangeNotifierProvider(create: (context) => ChatFilterProvider()),
+        ChangeNotifierProxyProvider<AuthProviderApp, CartProvider>(
+          create: (context) => CartProvider(),
+          update: (context, auth, previous) {
+            previous ??= CartProvider();
+            previous.updateAuth(auth);
+            return previous;
+          },
+        ),
         ChangeNotifierProxyProvider<AuthProviderApp, NotificationProvider>(
           create: (context) => NotificationProvider(),
           update: (context, auth, previous) {

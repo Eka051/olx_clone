@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:olx_clone/models/premium_package.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
+import 'package:olx_clone/providers/profile_provider.dart';
+import 'package:olx_clone/views/payment/payment_webview.dart';
+import 'package:provider/provider.dart';
 
 class PremiumPackageProvider extends ChangeNotifier {
   final AuthProviderApp _authProvider;
@@ -73,11 +76,11 @@ class PremiumPackageProvider extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, String>?> createPremiumPayment(int packageId) async {
+  Future<void> handleSubscription(BuildContext context) async {
+    if (selectedPackage == null) return;
     if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      _errorMessage = 'Silakan login terlebih dahulu';
-      notifyListeners();
-      return null;
+      _showErrorSnackbar(context, 'Silakan login terlebih dahulu');
+      return;
     }
 
     _isLoading = true;
@@ -87,7 +90,7 @@ class PremiumPackageProvider extends ChangeNotifier {
     try {
       final response = await http.post(
         Uri.parse(
-          '$_apiBaseUrl/payments/premium-subscriptions/$packageId/checkout',
+          '$_apiBaseUrl/payments/premium-subscriptions/${selectedPackage!.id}/checkout',
         ),
         headers: {
           'Content-Type': 'application/json',
@@ -95,46 +98,102 @@ class PremiumPackageProvider extends ChangeNotifier {
         },
       );
 
-      if (response.statusCode == 201) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+      final Map<String, dynamic> responseData = json.decode(response.body);
 
-        if (responseData['success'] == true && responseData['data'] != null) {
+      if (response.statusCode == 201 && context.mounted) {
+        if (responseData['data'] != null &&
+            responseData['data']['paymentUrl'] != null &&
+            responseData['data']['finishUrl'] != null) {
           final String paymentUrl = responseData['data']['paymentUrl'];
           final String finishUrl = responseData['data']['finishUrl'];
-          return {'paymentUrl': paymentUrl, 'finishUrl': finishUrl};
+
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => PaymentWebview(
+                    paymentUrl: paymentUrl,
+                    finishUrl: finishUrl,
+                  ),
+            ),
+          );
+
+          debugPrint(finishUrl);
+
+          if (result == 'success' && context.mounted) {
+            _showVerifyingDialog(context);
+            await context
+                .read<ProfileProvider>()
+                .refreshProfileAfterPremiumUpgrade();
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            }
+            if (context.mounted) {
+              _showSuccessSnackbar(context, 'Berhasil berlangganan premium!');
+            }
+            return;
+          } else if (context.mounted) {
+            _showSuccessSnackbar(context, 'Berhasil berlangganan premium!');
+          }
         } else {
           _errorMessage =
               responseData['message'] ?? 'Gagal membuat halaman pembayaran.';
+          if (context.mounted) _showErrorSnackbar(context, _errorMessage!);
         }
       } else {
-        final responseData = json.decode(response.body);
         _errorMessage =
             responseData['message'] ??
             'Terjadi kesalahan: ${response.statusCode}';
+        if (context.mounted) _showErrorSnackbar(context, _errorMessage!);
       }
     } catch (e) {
       _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
+      if (context.mounted) _showErrorSnackbar(context, _errorMessage!);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-    return null;
   }
 
-  Future<bool> verifyPaymentSuccess(int packageId) async {
-    return true; 
+  void _showVerifyingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogContext) => const PopScope(
+            canPop: false,
+            child: AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Memverifikasi pembayaran...'),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+  void _showErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
-  void reset() {
-    _packages.clear();
-    _selectedPackageIndex = 0;
-    _errorMessage = null;
-    _isLoading = false;
-    notifyListeners();
+  void _showSuccessSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }

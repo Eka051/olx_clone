@@ -41,7 +41,6 @@ class PaymentProvider extends ChangeNotifier {
                 final Uri uri = Uri.parse(request.url);
                 print('Navigation request URL: ${request.url}');
 
-                // Handle payment redirect patterns
                 if (uri.path.contains('payment-redirect.html')) {
                   final status = uri.queryParameters['status'];
                   if (status == 'success') {
@@ -52,7 +51,6 @@ class PaymentProvider extends ChangeNotifier {
                   return NavigationDecision.prevent;
                 }
 
-                // Handle DOKU success/failure URLs
                 if (uri.host.contains('olx-clone.app') ||
                     uri.path.contains('/payment/success') ||
                     uri.path.contains('/payment/callback')) {
@@ -73,7 +71,6 @@ class PaymentProvider extends ChangeNotifier {
                   return NavigationDecision.prevent;
                 }
 
-                // Handle any other success/failure patterns in URL
                 final url = request.url.toLowerCase();
                 if (url.contains('success') || url.contains('completed')) {
                   onPaymentResult('success');

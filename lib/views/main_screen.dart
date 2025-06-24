@@ -32,7 +32,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     const SellScreen(),
     const MyAdsView(),
     const ProfileView(),
-    const HalamanNew(),
+    // const HalamanNew(),
   ];
 
   void _onItemTapped(int index) {
@@ -144,12 +144,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       iconFilled: Icons.person_rounded,
                       label: 'Akun Saya',
                     ),
-                    _buildNavItem(
-                      index: 5,
-                      iconOutlined: Icons.pages_outlined,
-                      iconFilled: Icons.pages,
-                      label: 'Halaman Baru',
-                    ),
+                    // _buildNavItem(
+                    //   index: 5,
+                    //   iconOutlined: Icons.pages_outlined,
+                    //   iconFilled: Icons.pages,
+                    //   label: 'Halaman Baru',
+                    // ),
                   ],
                 ),
               ),

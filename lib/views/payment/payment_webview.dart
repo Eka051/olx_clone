@@ -3,10 +3,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class PaymentWebview extends StatefulWidget {
   final String paymentUrl;
-  final String finishUrl; 
+  final String finishUrl;
 
   const PaymentWebview({
-    super.key, 
+    super.key,
     required this.paymentUrl,
     required this.finishUrl,
   });
@@ -50,42 +50,24 @@ class _PaymentWebviewState extends State<PaymentWebview> {
             setState(() {
               _isLoading = false;
             });
+            Navigator.of(context).pop('failed');
           },
           onNavigationRequest: (NavigationRequest request) {
-            final Uri uri = Uri.parse(request.url);
-            
             if (request.url.startsWith(widget.finishUrl)) {
-              handlePaymentResult(uri);
+              final uri = Uri.parse(request.url);
+              final status = uri.queryParameters['transaction_status'];
+              if (status == 'settlement' || status == 'capture') {
+                 Navigator.of(context).pop('success');
+              } else {
+                 Navigator.of(context).pop('failed');
+              }
               return NavigationDecision.prevent;
             }
-
             return NavigationDecision.navigate;
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
-  }
-
-  void handlePaymentResult(Uri uri) {
-    final transactionStatus = uri.queryParameters['transaction_status'];
-    String result;
-
-    switch (transactionStatus) {
-      case 'settlement':
-      case 'capture':
-        result = 'success';
-        break;
-      case 'pending':
-        result = 'pending';
-        break;
-      default:
-        result = 'failed';
-        break;
-    }
-
-    if (mounted) {
-      Navigator.of(context).pop(result);
-    }
   }
 
   @override

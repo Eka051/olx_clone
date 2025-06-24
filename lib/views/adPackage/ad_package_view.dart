@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:olx_clone/utils/theme.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:olx_clone/models/ad_package.dart';
@@ -286,45 +287,134 @@ class _AdPackageViewState extends State<AdPackageView> {
     final selectedProduct = await showDialog<Product>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Pilih Iklan'),
-          content: Consumer<AdProvider>(
-            builder: (context, adProvider, child) {
-              if (adProvider.isLoadingMyProducts) {
-                return const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (adProvider.myProducts.isEmpty) {
-                return const Text('Anda tidak punya iklan untuk dipromosikan.');
-              }
-              return SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: adProvider.myProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = adProvider.myProducts[index];
-                    return ListTile(
-                      title: Text(product.title),
-                      onTap: () {
-                        Navigator.of(dialogContext).pop(product);
-                      },
-                    );
-                  },
-                ),
-              );
-            },
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Batal'),
+          backgroundColor: Colors.white,
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.of(context).colors.primary,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Pilih Iklan',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Consumer<AdProvider>(
+                    builder: (context, adProvider, child) {
+                      if (adProvider.isLoadingMyProducts) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: SizedBox(
+                            height: 100,
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        );
+                      }
+                      if (adProvider.myProducts.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: Text(
+                            'Anda tidak punya iklan untuk dipromosikan.',
+                            style: TextStyle(
+                              color: Color(0xFF002F34),
+                              fontSize: 15,
+                            ),
+                          ),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: SizedBox(
+                          width: double.maxFinite,
+                          height: 220,
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: adProvider.myProducts.length,
+                            separatorBuilder:
+                                (context, i) =>
+                                    Divider(color: Colors.grey[300], height: 1),
+                            itemBuilder: (context, index) {
+                              final product = adProvider.myProducts[index];
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 0,
+                                  vertical: 0,
+                                ),
+                                title: Text(
+                                  product.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF002F34),
+                                  ),
+                                ),
+                                trailing: Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onTap: () {
+                                  Navigator.of(dialogContext).pop(product);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, right: 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(dialogContext).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: const Text('Batal'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -332,7 +422,6 @@ class _AdPackageViewState extends State<AdPackageView> {
     if (selectedProduct != null) {
       await provider.addToCart(package, selectedProduct.id);
       if (!mounted) return;
-
       if (provider.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

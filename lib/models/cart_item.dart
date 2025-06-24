@@ -1,5 +1,5 @@
 class CartItem {
-  final int id;
+  final String id;
   final int adPackageId;
   final int productId;
   final String adPackageName;
@@ -17,7 +17,7 @@ class CartItem {
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
     return CartItem(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? '',
       adPackageId: json['adPackageId'] ?? 0,
       productId: json['productId'] ?? 0,
       adPackageName: json['adPackageName'] ?? '',
@@ -36,7 +36,7 @@ class CartItem {
   };
 
   CartItem copyWith({
-    int? id,
+    String? id,
     int? adPackageId,
     int? productId,
     String? adPackageName,

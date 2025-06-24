@@ -177,7 +177,7 @@ class _ProfileViewState extends State<ProfileView> {
                   gradient: LinearGradient(
                     colors: [
                       AppTheme.of(context).colors.primary,
-                      AppTheme.of(context).colors.primary.withOpacity(0.8),
+                      AppTheme.of(context).colors.primary.withAlpha(130),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -185,7 +185,7 @@ class _ProfileViewState extends State<ProfileView> {
                     BoxShadow(
                       color: AppTheme.of(
                         context,
-                      ).colors.primary.withOpacity(0.3),
+                      ).colors.primary.withAlpha(45),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -391,13 +391,13 @@ class _ProfileViewState extends State<ProfileView> {
           Navigator.pushNamed(context, AppRoutes.premiumPackages);
         },
       },
-      {
-        'icon': Icons.stacked_bar_chart,
-        'title': 'notification',
-        'onTap': () {
-          Navigator.pushNamed(context, AppRoutes.notification);
-        },
-      },
+      // {
+      //   'icon': Icons.stacked_bar_chart,
+      //   'title': 'notification',
+      //   'onTap': () {
+      //     Navigator.pushNamed(context, AppRoutes.notification);
+      //   },
+      // },
       {
         'icon': Icons.logout,
         'title': 'Logout',
