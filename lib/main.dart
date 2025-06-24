@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:olx_clone/firebase_options.dart';
+import 'package:olx_clone/providers/notification_provider.dart';
 import 'package:olx_clone/utils/firebase_config.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/category_provider.dart';
@@ -26,6 +27,7 @@ import 'package:olx_clone/views/main_screen.dart';
 import 'package:olx_clone/views/adPackage/ad_package_view.dart';
 import 'package:olx_clone/views/adPackage/cart_view.dart';
 import 'package:olx_clone/views/adPackage/payment_view.dart';
+import 'package:olx_clone/views/notification/notification_view.dart';
 import 'package:olx_clone/views/premium%20package/premium_package_view.dart';
 import 'package:olx_clone/views/profile/edit_profile_view.dart';
 import 'package:olx_clone/views/product/product_detail_view.dart';
@@ -47,6 +49,14 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AuthProviderApp()),
         ChangeNotifierProvider(create: (context) => CategoryProvider()),
         ChangeNotifierProvider(create: (context) => ChatFilterProvider()),
+        ChangeNotifierProxyProvider<AuthProviderApp, NotificationProvider>(
+          create: (context) => NotificationProvider(),
+          update: (context, auth, previous) {
+            previous ??= NotificationProvider();
+            previous.updateAuth(auth);
+            return previous;
+          },
+        ),
         ChangeNotifierProxyProvider<AuthProviderApp, ProfileProvider>(
           create: (context) => ProfileProvider(context.read<AuthProviderApp>()),
           update: (context, auth, previous) {
@@ -99,8 +109,12 @@ void main() async {
           update: (context, auth, previous) => PremiumPackageProvider(auth),
         ),
         ChangeNotifierProxyProvider<AuthProviderApp, AdProvider>(
-          create: (context) => AdProvider(context.read<AuthProviderApp>()),
-          update: (context, auth, previous) => AdProvider(auth),
+          create: (context) => AdProvider(),
+          update: (context, auth, previous) {
+            previous ??= AdProvider();
+            previous.updateAuth(auth);
+            return previous;
+          },
         ),
       ],
       child: const OlxClone(),
@@ -136,6 +150,7 @@ class OlxClone extends StatelessWidget {
         AppRoutes.adPackages: (_) => const AdPackageView(),
         AppRoutes.cart: (_) => const CartView(),
         AppRoutes.editProfile: (_) => const EditProfileView(),
+        AppRoutes.notification: (_) => const NotificationView(),
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: (settings) {

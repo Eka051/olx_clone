@@ -1,14 +1,29 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
+import 'package:olx_clone/models/product.dart';
 import 'package:olx_clone/services/google_geocoding_service.dart';
+import 'package:olx_clone/utils/const.dart';
 
 class HomeProvider extends ChangeNotifier {
-  String _searchQuery = '';
-  bool _isSearching = false;
   final String _baseUrl = 'https://olx-api-production.up.railway.app';
+
+  List<Product> _products = [];
   String _selectedLocation = 'Mendapatkan lokasi...';
+  String _city = '';
+  String? _error;
+  bool _isLoading = false;
   bool _disposed = false;
+
+  final TextEditingController searchController = TextEditingController();
+  Timer? _debounce;
+
+  List<Product> get products => _products;
+  String get selectedLocation => _selectedLocation;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
 
   final List<String> _bannerImages = [
     'assets/images/KV-SUPER-DEALS.png',
@@ -16,16 +31,22 @@ class HomeProvider extends ChangeNotifier {
     'assets/images/image-ads.jpg',
     'assets/images/booking.jpg',
   ];
-
-  String get searchQuery => _searchQuery;
-  bool get isSearching => _isSearching;
-  String get selectedLocation => _selectedLocation;
   List<String> get bannerImages => _bannerImages;
-  bool get disposed => _disposed;
+
+  HomeProvider() {
+    _initialize();
+  }
+
+  void _initialize() async {
+    await _getCurrentLocation();
+    fetchProducts();
+  }
 
   @override
   void dispose() {
     _disposed = true;
+    _debounce?.cancel();
+    searchController.dispose();
     super.dispose();
   }
 
@@ -36,79 +57,92 @@ class HomeProvider extends ChangeNotifier {
     }
   }
 
-  void updateSearchQuery(String query) {
-    if (_disposed) return;
-    _searchQuery = query;
+  void onSearchQueryChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 600), () {
+      fetchProducts();
+    });
     notifyListeners();
   }
 
-  void toggleSearch() {
-    if (_disposed) return;
-    _isSearching = !_isSearching;
+  void searchNow() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    fetchProducts();
+  }
+
+  void clearSearch(BuildContext context) {
+    searchController.clear();
+    fetchProducts();
+    FocusScope.of(context).unfocus();
     notifyListeners();
   }
 
-  void clearSearch() {
+  Future<void> fetchProducts() async {
     if (_disposed) return;
-    _searchQuery = '';
-    _isSearching = false;
+    _isLoading = true;
+    _error = null;
     notifyListeners();
-  }
-
-  void updateLocation(String location) {
-    if (_disposed) return;
-    _selectedLocation = location;
-    notifyListeners();
-  }
-
-  void onOfferTapped() {}
-
-  void onReceiptTapped() {}
-
-  void onLocationTapped() {}
-
-  void onNotificationTapped() {}
-
-  void onSearch(String query) {
-    updateSearchQuery(query);
-  }
-
-  Future<void> getAllProduct() async {
-    if (_disposed) return;
 
     try {
-      final url = Uri.parse('$_baseUrl/api/products');
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      );
+      final String searchTerm = searchController.text;
+      Uri url;
+
+      if (searchTerm.isEmpty) {
+        url = Uri.parse('$_baseUrl/api/products');
+      } else {
+        final queryParams = {'searchTerm': searchTerm, 'city': _city};
+        url = Uri.parse(
+          '$_baseUrl/api/products/search',
+        ).replace(queryParameters: queryParams);
+      }
+
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              return http.Response(
+                '{"success":true,"message":"Timeout","data":[]}',
+                200,
+              );
+            },
+          );
 
       if (_disposed) return;
 
       if (response.statusCode == 200) {
-        notifyListeners();
+        final productResponse = productListResponseFromJson(response.body);
+        if (productResponse.success) {
+          _products = productResponse.data;
+        } else {
+          _error = productResponse.message;
+        }
       } else {
-        throw Exception('Failed to load products: ${response.statusCode}');
+        final responseData = json.decode(response.body);
+        _error =
+            responseData['message'] ??
+            'Gagal memuat produk: ${response.statusCode}';
       }
-    } catch (e) {}
+    } catch (e) {
+      _error = 'Terjadi kesalahan jaringan: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  HomeProvider() {
-    _getCurrentLocation();
-  }
   Future<void> _getCurrentLocation() async {
-    if (_disposed) return;
-
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        if (!_disposed) {
-          _selectedLocation = 'Layanan lokasi tidak aktif';
-          notifyListeners();
-        }
+        _selectedLocation = 'Layanan lokasi mati';
+        notifyListeners();
         return;
       }
 
@@ -116,19 +150,15 @@ class HomeProvider extends ChangeNotifier {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          if (!_disposed) {
-            _selectedLocation = 'Izin lokasi ditolak';
-            notifyListeners();
-          }
+          _selectedLocation = 'Izin lokasi ditolak';
+          notifyListeners();
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        if (!_disposed) {
-          _selectedLocation = 'Izin lokasi ditolak permanen';
-          notifyListeners();
-        }
+        _selectedLocation = 'Izin lokasi ditolak permanen';
+        notifyListeners();
         return;
       }
 
@@ -147,17 +177,20 @@ class HomeProvider extends ChangeNotifier {
 
       if (_disposed) return;
 
-      if (result != null) {
+      if (result != null && result['city'] != null) {
+        _city = result['city']!;
         _selectedLocation = '${result['district']}, ${result['city']}';
       } else {
         _selectedLocation = 'Lokasi tidak ditemukan';
       }
-      notifyListeners();
     } catch (e) {
-      if (!_disposed) {
-        _selectedLocation = 'Gagal mendapatkan lokasi';
-        notifyListeners();
-      }
+      _selectedLocation = 'Gagal mendapatkan lokasi';
+    } finally {
+      notifyListeners();
     }
+  }
+
+  void onNotificationTapped(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.notification);
   }
 }

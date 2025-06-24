@@ -1,67 +1,23 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:olx_clone/models/ad_package.dart';
+import 'package:olx_clone/models/cart_item.dart';
 import 'package:olx_clone/models/product.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
-class CartItem {
-  final String id;
-  final int adPackageId;
-  final String adPackageName;
-  final int quantity;
-  final int? productId;
-  final String? productTitle;
-  final String userId;
-  final String userName;
-  final int price;
-
-  CartItem({
-    required this.id,
-    required this.adPackageId,
-    required this.adPackageName,
-    required this.quantity,
-    this.productId,
-    this.productTitle,
-    required this.userId,
-    required this.userName,
-    required this.price,
-  });
-
-  int get totalPrice => price * quantity;
-
-  factory CartItem.fromJson(Map<String, dynamic> json) {
-    return CartItem(
-      id: json['id'] ?? '',
-      adPackageId: json['adPackageId'] ?? 0,
-      adPackageName: json['adPackageName'] ?? '',
-      quantity: json['quantity'] ?? 0,
-      productId: json['productId'],
-      productTitle: json['productTitle'],
-      userId: json['userId'] ?? '',
-      userName: json['userName'] ?? '',
-      price: json['price'] ?? 0,
-    );
-  }
-}
-
-class AdProvider extends ChangeNotifier {
-  final AuthProviderApp _authProvider;
-  final String _apiBaseUrl = 'https://olx-api-production.up.railway.app/api';
+class AdProvider with ChangeNotifier {
+  String? _token;
+  final String _baseUrl = 'https://olx-api-production.up.railway.app/api';
 
   List<AdPackage> _packages = [];
   List<CartItem> _cartItems = [];
   List<Product> _myProducts = [];
+
   bool _isLoading = false;
   bool _isLoadingMyProducts = false;
   String? _errorMessage;
-  int _selectedFilterIndex = 0;
-
-  AdProvider(this._authProvider) {
-    if (_authProvider.isLoggedIn) {
-      fetchCart();
-    }
-  }
+  int _cartTotalPrice = 0;
 
   List<AdPackage> get packages => _packages;
   List<CartItem> get cartItems => _cartItems;
@@ -69,67 +25,78 @@ class AdProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingMyProducts => _isLoadingMyProducts;
   String? get errorMessage => _errorMessage;
-  int get selectedFilterIndex => _selectedFilterIndex;
+  int get cartTotalPrice => _cartTotalPrice;
   int get cartItemCount =>
       _cartItems.fold(0, (sum, item) => sum + item.quantity);
-  int get cartTotalPrice =>
-      _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
 
-  void setFilterIndex(int index) {
-    _selectedFilterIndex = index;
+  void updateAuth(AuthProviderApp auth) {
+    _token = auth.jwtToken;
+    if (_token != null) {
+      fetchAdPackages();
+      fetchMyProducts();
+      fetchCart();
+    } else {
+      _clearState();
+    }
+  }
+
+  void _clearState() {
+    _packages = [];
+    _cartItems = [];
+    _myProducts = [];
+    _cartTotalPrice = 0;
+    _errorMessage = null;
     notifyListeners();
   }
 
+  void _calculateTotals() {
+    _cartTotalPrice = _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
+    notifyListeners();
+  }
+
+  Future<void> _handleApiResponse(
+    http.Response response,
+    Function(Map<String, dynamic>) onSuccess,
+  ) async {
+    _errorMessage = null;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        onSuccess(data);
+      } else {
+        _errorMessage = data['message'] ?? 'Terjadi kesalahan pada server.';
+      }
+    } else {
+      try {
+        final errorData = json.decode(response.body);
+        _errorMessage = errorData['message'] ?? 'Gagal memproses permintaan.';
+      } catch (e) {
+        _errorMessage =
+            'Gagal memproses permintaan. Status: ${response.statusCode}';
+      }
+    }
+  }
+
   Future<void> fetchAdPackages() async {
+    if (_token == null) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      print('Fetching ad packages from: $_apiBaseUrl/adPackage');
-
-      final headers = <String, String>{'Content-Type': 'application/json'};
-
-      if (_authProvider.isLoggedIn && _authProvider.jwtToken != null) {
-        headers['Authorization'] = 'Bearer ${_authProvider.jwtToken}';
-        print('Using Authorization header with token');
-      } else {
-        print('No token available - fetching without auth');
-      }
-
       final response = await http.get(
-        Uri.parse('$_apiBaseUrl/adPackage'),
-        headers: headers,
+        Uri.parse('$_baseUrl/adPackage'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-
-        if (data['success'] == true && data['data'] != null) {
-          if (data['data'] is List) {
-            final List<dynamic> packagesJson = data['data'];
-            _packages =
-                packagesJson.map((json) => AdPackage.fromJson(json)).toList();
-            print('Successfully loaded ${_packages.length} ad packages');
-          } else {
-            _errorMessage = 'Format data tidak sesuai - data bukan array';
-          }
+      await _handleApiResponse(response, (data) {
+        if(data['data'] != null) {
+          _packages = (data['data'] as List).map((p) => AdPackage.fromJson(p)).toList();
         } else {
-          _errorMessage = data['message'] ?? 'Gagal memuat data paket iklan';
+          _packages = [];
         }
-      } else if (response.statusCode == 401) {
-        _errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
-        print('Authentication failed - token may be expired');
-      } else {
-        _errorMessage =
-            'Gagal memuat data paket iklan. Status: ${response.statusCode}';
-      }
+      });
     } catch (e) {
-      print('Error fetching ad packages: $e');
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
+      _errorMessage = 'Gagal terhubung ke server. Periksa koneksi Anda.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -137,36 +104,25 @@ class AdProvider extends ChangeNotifier {
   }
 
   Future<void> fetchMyProducts() async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      return;
-    }
-
+    if (_token == null) return;
     _isLoadingMyProducts = true;
+    _errorMessage = null;
     notifyListeners();
-
     try {
       final response = await http.get(
-        Uri.parse('$_apiBaseUrl/me/products'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
+        Uri.parse('$_baseUrl/products?isMyAds=true'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['success'] == true && data['data'] is List) {
-          final List<dynamic> productsJson = data['data'];
-          _myProducts =
-              productsJson.map((json) => Product.fromJson(json)).toList();
+      await _handleApiResponse(response, (data) {
+        if (data['data'] != null) {
+        _myProducts =
+            (data['data'] as List).map((p) => Product.fromJson(p)).toList();
         } else {
-          _errorMessage = data['message'] ?? 'Gagal memuat produk saya';
+          _myProducts = [];
         }
-      } else {
-        _errorMessage = 'Gagal memuat produk. Status: ${response.statusCode}';
-      }
+      });
     } catch (e) {
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
+      _errorMessage = 'Gagal memuat iklan saya.';
     } finally {
       _isLoadingMyProducts = false;
       notifyListeners();
@@ -174,37 +130,103 @@ class AdProvider extends ChangeNotifier {
   }
 
   Future<void> fetchCart() async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      return;
-    }
-
+    if (_token == null) return;
+    _isLoading = true;
+    notifyListeners();
     try {
       final response = await http.get(
-        Uri.parse('$_apiBaseUrl/cart'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
+        Uri.parse('$_baseUrl/cart'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['success'] == true && data['data'] is List) {
-          final List<dynamic> cartJson = data['data'];
-          _cartItems = cartJson.map((json) => CartItem.fromJson(json)).toList();
-          notifyListeners();
+      await _handleApiResponse(response, (data) {
+        if (data['data'] != null) {
+          _cartItems = (data['data'] as List)
+              .map((item) => CartItem.fromJson(item))
+              .toList();
+          _calculateTotals();
+        } else {
+          _cartItems = [];
+          _calculateTotals();
         }
-      }
+      });
     } catch (e) {
-      // Silent fail for cart fetch
+      _errorMessage = 'Gagal memuat keranjang.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> addToCart(AdPackage package, int productId) async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      _errorMessage = 'Silakan login terlebih dahulu';
+    if (_token == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/cart'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: json.encode({'adPackageId': package.id, 'productId': productId}),
+      );
+      await _handleApiResponse(response, (data) async {
+        await fetchCart();
+      });
+    } catch (e) {
+      _errorMessage = 'Gagal menambahkan ke keranjang.';
+    }
+    notifyListeners();
+  }
+
+  Future<void> removeFromCart(int cartItemId) async {
+    if (_token == null) return;
+    _cartItems.removeWhere((item) => item.id == cartItemId);
+    _calculateTotals();
+    notifyListeners();
+
+    try {
+      await http.delete(
+        Uri.parse('$_baseUrl/cart/$cartItemId'),
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+    } catch (e) {
+      fetchCart();
+    }
+  }
+
+  Future<void> updateCartItemQuantity(int cartItemId, int quantity) async {
+    if (_token == null) return;
+    final itemIndex = _cartItems.indexWhere((item) => item.id == cartItemId);
+    if (itemIndex == -1 || quantity <= 0) return;
+
+    final oldItem = _cartItems[itemIndex];
+    final unitPrice = (oldItem.totalPrice / oldItem.quantity).round();
+    _cartItems[itemIndex] = oldItem.copyWith(
+      quantity: quantity,
+      totalPrice: unitPrice * quantity,
+    );
+    _calculateTotals();
+    notifyListeners();
+
+    try {
+      await http.put(
+        Uri.parse('$_baseUrl/cart/$cartItemId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: json.encode({'quantity': quantity}),
+      );
+      await fetchCart();
+    } catch (e) {
+      await fetchCart();
+    }
+  }
+
+  Future<Map<String, String>?> createCheckout() async {
+    if (_token == null || _cartItems.isEmpty) {
+      _errorMessage = 'Keranjang kosong atau Anda belum login.';
       notifyListeners();
-      return;
+      return null;
     }
 
     _isLoading = true;
@@ -212,226 +234,64 @@ class AdProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final requestBody = {
-        'adPackageId': package.id,
-        'productId': productId,
-        'quantity': 1,
-      };
-
       final response = await http.post(
-        Uri.parse('$_apiBaseUrl/cart'),
+        Uri.parse('$_baseUrl/payments/cart/checkout'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
+          'Authorization': 'Bearer $_token',
         },
-        body: json.encode(requestBody),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        await fetchCart();
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final String paymentUrl = responseData['data']['paymentUrl'];
+          final String finishUrl = responseData['data']['finishUrl'];
+          return {'paymentUrl': paymentUrl, 'finishUrl': finishUrl};
+        } else {
+          _errorMessage = responseData['message'] ?? 'Respons checkout tidak valid.';
+        }
       } else {
-        _errorMessage = 'Gagal menambahkan ke keranjang';
-        notifyListeners();
+        final errorData = json.decode(response.body);
+        _errorMessage = errorData['message'] ?? 'Gagal membuat pesanan.';
       }
+
     } catch (e) {
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
-      notifyListeners();
+      _errorMessage = 'Gagal membuat pesanan: ${e.toString()}';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  Future<void> removeFromCart(String cartItemId) async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      return;
-    }
-
-    try {
-      final response = await http.delete(
-        Uri.parse('$_apiBaseUrl/cart/$cartItemId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        await fetchCart();
-      }
-    } catch (e) {
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
-      notifyListeners();
-    }
-  }
-
-  Future<void> updateCartItemQuantity(String cartItemId, int quantity) async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      return;
-    }
-
-    if (quantity <= 0) {
-      await removeFromCart(cartItemId);
-      return;
-    }
-
-    try {
-      final cartItem = _cartItems.firstWhere((item) => item.id == cartItemId);
-
-      await removeFromCart(cartItemId);
-
-      final requestBody = {
-        'adPackageId': cartItem.adPackageId,
-        'quantity': quantity,
-        if (cartItem.productId != null) 'productId': cartItem.productId,
-      };
-
-      final response = await http.post(
-        Uri.parse('$_apiBaseUrl/cart'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
-        body: json.encode(requestBody),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        await fetchCart();
-      }
-    } catch (e) {
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
-      notifyListeners();
-    }
+    return null;
   }
 
   Future<void> clearCart() async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      _cartItems.clear();
-      notifyListeners();
-      return;
-    }
-
-    try {
-      for (final item in _cartItems) {
-        await http.delete(
-          Uri.parse('$_apiBaseUrl/cart/${item.id}'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${_authProvider.jwtToken}',
-          },
-        );
-      }
-      _cartItems.clear();
-      notifyListeners();
-    } catch (e) {
-      _cartItems.clear();
-      notifyListeners();
-    }
-  }
-
-  Future<String?> createCheckout() async {
-    if (!_authProvider.isLoggedIn || _authProvider.jwtToken == null) {
-      _errorMessage = 'Silakan login terlebih dahulu';
-      notifyListeners();
-      return null;
-    }
-
-    if (_cartItems.isEmpty) {
-      _errorMessage = 'Keranjang kosong';
-      notifyListeners();
-      return null;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
+    if (_token == null) return;
+    _cartItems.clear();
+    _calculateTotals();
     notifyListeners();
-
     try {
-      final response = await http.post(
-        Uri.parse('$_apiBaseUrl/payments/cart/checkout'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
+      await http.delete(
+        Uri.parse('$_baseUrl/cart/clear'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          clearCart();
-          return responseData['data']['invoiceNumber'];
-        } else {
-          _errorMessage = responseData['message'] ?? 'Gagal membuat checkout';
-          return null;
-        }
-      } else {
-        _errorMessage = 'Gagal membuat checkout. Kode: ${response.statusCode}';
-        return null;
-      }
-    } catch (e) {
-      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
-      return null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    } catch (e) {}
   }
 
   Future<String?> checkPaymentStatus(String invoiceNumber) async {
+    if (_token == null) return null;
     try {
       final response = await http.get(
-        Uri.parse('$_apiBaseUrl/payments/$invoiceNumber'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
+        Uri.parse('$_baseUrl/payment/status/$invoiceNumber'),
+        headers: {'Authorization': 'Bearer $_token'},
       );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          return responseData['data']['status'];
-        }
-      }
-      return null;
+      String? status;
+      await _handleApiResponse(response, (data) {
+        status = data['data']['status'];
+      });
+      return status;
     } catch (e) {
-      return null;
+      return 'ERROR';
     }
-  }
-
-  Future<Map<String, dynamic>?> getPaymentStatus(String invoiceNumber) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$_apiBaseUrl/payments/$invoiceNumber'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authProvider.jwtToken}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          return responseData['data'];
-        }
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
-  }
-
-  void reset() {
-    _packages.clear();
-    _cartItems.clear();
-    _selectedFilterIndex = 0;
-    _errorMessage = null;
-    _isLoading = false;
-    notifyListeners();
   }
 }
