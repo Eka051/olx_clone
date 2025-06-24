@@ -4,6 +4,7 @@ import 'package:olx_clone/models/product.dart';
 import 'package:olx_clone/utils/theme.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/providers/profile_provider.dart';
+import 'package:olx_clone/providers/product_provider.dart';
 import 'package:olx_clone/services/chat_service.dart';
 import 'package:olx_clone/views/chat/chat_room_view.dart';
 
@@ -46,7 +47,22 @@ class ProductDetailView extends StatelessWidget {
         ),
         actions: [
           IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
+          Selector<ProductProvider, bool>(
+            selector:
+                (context, provider) =>
+                    provider.favoriteProductIds.contains(product.id),
+            builder: (context, isFavorite, child) {
+              return IconButton(
+                icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+                color: isFavorite ? Colors.red : null,
+                onPressed: () {
+                  context.read<ProductProvider>().toggleFavoriteStatus(
+                    product.id,
+                  );
+                },
+              );
+            },
+          ),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),

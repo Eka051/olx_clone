@@ -3,12 +3,18 @@ import 'package:olx_clone/utils/const.dart';
 import 'package:olx_clone/utils/theme.dart';
 
 class SearchBarWidget extends SliverPersistentHeaderDelegate {
-  final Function(String) onSearch;
+  final TextEditingController controller;
+  final Function(String) onChanged;
+  final Function(String) onSubmitted;
+  final VoidCallback onClear;
   final VoidCallback onNotificationTap;
   final String hintText;
 
   SearchBarWidget({
-    required this.onSearch,
+    required this.controller,
+    required this.onChanged,
+    required this.onSubmitted,
+    required this.onClear,
     required this.onNotificationTap,
     this.hintText = 'Temukan Mobil, Handphone, dan lainnya',
   });
@@ -44,7 +50,10 @@ class SearchBarWidget extends SliverPersistentHeaderDelegate {
               child: SizedBox(
                 height: 44.0,
                 child: TextField(
-                  onChanged: onSearch,
+                  controller: controller,
+                  onChanged: onChanged,
+                  onSubmitted: onSubmitted,
+                  textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
@@ -55,25 +64,29 @@ class SearchBarWidget extends SliverPersistentHeaderDelegate {
                       color: AppTheme.of(context).colors.primary,
                       size: 20,
                     ),
+                    suffixIcon: controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: onClear,
+                            color: Colors.grey[600],
+                          )
+                        : null,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.borderRadiusM,
-                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.borderRadiusM),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.borderRadiusM,
-                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.borderRadiusM),
                       borderSide: BorderSide(
                         color: AppTheme.of(context).colors.primary,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.borderRadiusM,
-                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.borderRadiusM),
                       borderSide: BorderSide(
                         color: AppTheme.of(context).colors.primary,
                         width: 2,
@@ -106,6 +119,10 @@ class SearchBarWidget extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
-    return false;
+    if (oldDelegate is SearchBarWidget) {
+      return controller != oldDelegate.controller ||
+          controller.text != oldDelegate.controller.text;
+    }
+    return true;
   }
 }

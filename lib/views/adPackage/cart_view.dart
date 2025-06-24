@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/providers/ad_provider.dart';
+import 'package:olx_clone/models/cart_item.dart';
 import 'package:olx_clone/views/payment/payment_webview.dart';
 
 class CartView extends StatefulWidget {
@@ -43,7 +44,7 @@ class _CartViewState extends State<CartView> {
         shadowColor: Colors.grey.withOpacity(0.2),
       ),
       body:
-          adProvider.isLoading
+          adProvider.isLoading && adProvider.cartItems.isEmpty
               ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFF002F34)),
               )
@@ -275,7 +276,7 @@ class _CartViewState extends State<CartView> {
                 elevation: 2,
               ),
               child:
-                  (_isProcessingPayment || adProvider.isLoading)
+                  _isProcessingPayment
                       ? const SizedBox(
                         height: 24,
                         width: 24,
@@ -304,43 +305,56 @@ class _CartViewState extends State<CartView> {
     setState(() => _isProcessingPayment = true);
 
     try {
-      final paymentUrl = await adProvider.createCheckout();
+      final int currentTotal = adProvider.cartTotalPrice;
+      final checkoutData = await adProvider.createCheckout();
 
-      if (paymentUrl != null && mounted) {
+      if (checkoutData != null && mounted) {
+        final String paymentUrl =
+            checkoutData['redirectUrl'] ?? checkoutData['paymentUrl'] ?? '';
+        final String invoice = checkoutData['invoice'] ?? '';
+
+        if (paymentUrl.isEmpty || invoice.isEmpty) {
+          _showErrorDialog('Data pembayaran tidak valid.');
+          return;
+        }
+
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PaymentWebview(
-              paymentUrl: paymentUrl,
-              finishUrl: 'https://your-finish-url.com/',
-            ),
+            builder:
+                (context) => PaymentWebview(
+                  paymentUrl: paymentUrl,
+                  finishUrl: 'https://your-finish-url.com/',
+                ),
           ),
         );
 
         if (result == 'success') {
-          adProvider.clearCart();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pembayaran berhasil!'),
-              backgroundColor: Color(0xFF00A49F),
-              behavior: SnackBarBehavior.floating,
-            ),
+          await adProvider.clearCart();
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (context) => PaymentResultView(
+                      invoiceNumber: invoice,
+                      totalAmount: currentTotal,
+                    ),
+              ),
+            );
+          }
+        } else {
+          _showErrorDialog(
+            'Pembayaran gagal, dibatalkan, atau jendela ditutup.',
           );
-          Navigator.pop(context);
-        } else if (result == 'failed') {
-          _showErrorDialog('Pembayaran gagal atau dibatalkan.');
         }
       } else if (mounted) {
         _showErrorDialog(adProvider.errorMessage ?? 'Gagal membuat pesanan');
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
-      }
+      if (mounted) _showErrorDialog('Terjadi kesalahan: e.toString()}');
     } finally {
-      if (mounted) {
-        setState(() => _isProcessingPayment = false);
-      }
+      if (mounted) setState(() => _isProcessingPayment = false);
     }
   }
 
@@ -365,11 +379,95 @@ class _CartViewState extends State<CartView> {
   }
 
   String _formatPrice(int price) {
-    final formatter = NumberFormat.currency(
+    return NumberFormat.currency(
       locale: 'id_ID',
       symbol: '',
       decimalDigits: 0,
+    ).format(price);
+  }
+}
+
+class PaymentResultView extends StatelessWidget {
+  final String invoiceNumber;
+  final int totalAmount;
+  const PaymentResultView({
+    super.key,
+    required this.invoiceNumber,
+    required this.totalAmount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Pembayaran Berhasil',
+          style: TextStyle(
+            color: Color(0xFF002F34),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF002F34),
+        elevation: 1,
+        shadowColor: Colors.grey.withOpacity(0.2),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+                size: 80,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Pembayaran Berhasil',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF002F34),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Invoice: $invoiceNumber',
+                style: const TextStyle(fontSize: 16, color: Color(0xFF002F34)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Total: Rp ${''}',
+                style: TextStyle(fontSize: 16, color: Color(0xFF002F34)),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.popUntil(context, (route) => route.isFirst),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF002F34),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Kembali ke Beranda',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-    return formatter.format(price);
   }
 }

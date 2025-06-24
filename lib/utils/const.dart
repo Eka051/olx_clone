@@ -46,7 +46,7 @@ class AppRoutes {
   static const String adPackages = '/ad-packages';
   static const String cart = '/cart';
   static const String editProfile = '/edit-profile';
-  static const String settings = '/settings';
+  static const String notification = '/notification';
 }
 
 class AppDimensions {

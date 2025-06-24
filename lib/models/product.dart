@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum ProductStatus { active, sold, expired }
 
 class Product {
@@ -119,3 +121,29 @@ class Product {
     }
   }
 }
+
+class ProductListResponse {
+  final bool success;
+  final String message;
+  final List<Product> data;
+
+  ProductListResponse({
+    required this.success,
+    required this.message,
+    required this.data,
+  });
+
+  factory ProductListResponse.fromJson(Map<String, dynamic> json) {
+    return ProductListResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data:
+          json['data'] != null
+              ? List<Product>.from(json['data'].map((x) => Product.fromJson(x)))
+              : [],
+    );
+  }
+}
+
+ProductListResponse productListResponseFromJson(String str) =>
+    ProductListResponse.fromJson(json.decode(str));
