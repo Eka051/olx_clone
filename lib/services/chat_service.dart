@@ -33,17 +33,14 @@ class ChatService {
 
     _hubConnection?.onclose(({Exception? error}) {
       _connectionStatusController.add('disconnected');
-      debugPrint('SignalR Connection Closed: $error');
     });
 
     _hubConnection?.onreconnecting(({Exception? error}) {
       _connectionStatusController.add('reconnecting');
-      debugPrint('SignalR Reconnecting: $error');
     });
 
     _hubConnection?.onreconnected(({String? connectionId}) {
       _connectionStatusController.add('reconnected');
-      debugPrint('SignalR Reconnected: $connectionId');
     });
 
     _hubConnection?.on('ReceiveMessage', (arguments) {
@@ -54,17 +51,15 @@ class ChatService {
           _messageStreamController.add(message);
         }
       } catch (e) {
-        debugPrint('Error parsing received message: $e');
+        // Error parsing received message
       }
     });
 
     try {
       await _hubConnection?.start();
       _connectionStatusController.add('connected');
-      debugPrint('SignalR Connection Started');
     } catch (e) {
       _connectionStatusController.add('failed');
-      debugPrint('Error starting SignalR connection: $e');
     }
   }
 
@@ -73,7 +68,6 @@ class ChatService {
       await _hubConnection?.stop();
       _hubConnection = null;
       _connectionStatusController.add('disconnected');
-      debugPrint('SignalR Connection Stopped');
     }
   }
 
@@ -81,9 +75,8 @@ class ChatService {
     if (!isConnected) return;
     try {
       await _hubConnection?.invoke('JoinRoom', args: [chatRoomId]);
-      debugPrint('Joined chat room: $chatRoomId');
     } catch (e) {
-      debugPrint('Error joining room $chatRoomId: $e');
+      // Error joining room
     }
   }
 
@@ -91,9 +84,8 @@ class ChatService {
     if (!isConnected) return;
     try {
       await _hubConnection?.invoke('LeaveRoom', args: [chatRoomId]);
-      debugPrint('Left chat room: $chatRoomId');
     } catch (e) {
-      debugPrint('Error leaving room $chatRoomId: $e');
+      // Error leaving room
     }
   }
 
@@ -101,9 +93,8 @@ class ChatService {
     if (!isConnected) return;
     try {
       await _hubConnection?.invoke('SendMessage', args: [chatRoomId, content]);
-      debugPrint('Message sent via SignalR to room: $chatRoomId');
     } catch (e) {
-      debugPrint('Error sending message via SignalR: $e');
+      // Error sending message via SignalR
     }
   }
 
@@ -121,11 +112,9 @@ class ChatService {
         final data = json.decode(response.body);
         return data['data'] ?? [];
       } else {
-        debugPrint('Failed to get chat rooms: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      debugPrint('Error getting chat rooms: $e');
       return [];
     }
   }
@@ -153,11 +142,9 @@ class ChatService {
                 .toList();
         return messages;
       } else {
-        debugPrint('Failed to get messages: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      debugPrint('Error getting messages: $e');
       return [];
     }
   }
@@ -180,11 +167,9 @@ class ChatService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        debugPrint('Failed to send message: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('Error sending message: $e');
       return false;
     }
   }
@@ -207,11 +192,9 @@ class ChatService {
         final data = json.decode(response.body);
         return ChatRoom.fromJson(data['data']);
       } else {
-        debugPrint('Failed to create chat room: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      debugPrint('Error creating chat room: $e');
       return null;
     }
   }
@@ -235,11 +218,9 @@ class ChatService {
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        debugPrint('Failed to delete chat room: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('Error deleting chat room: $e');
       return false;
     }
   }

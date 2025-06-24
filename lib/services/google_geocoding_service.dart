@@ -3,13 +3,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Service for Google Geocoding API operations
 class GoogleGeocodingService {
   static String get _apiKey => dotenv.env['GMAPS_API_KEY'] ?? '';
   static const String _baseUrl =
       'https://maps.googleapis.com/maps/api/geocode/json';
 
-  /// Convert coordinates to address using reverse geocoding
   static Future<Map<String, dynamic>?> getAddressFromCoordinates(
     double latitude,
     double longitude,
@@ -33,12 +31,10 @@ class GoogleGeocodingService {
       }
       return null;
     } catch (e) {
-      debugPrint('Error in geocoding: $e');
       return null;
     }
   }
 
-  /// Convert address to coordinates using forward geocoding
   static Future<Map<String, dynamic>?> getCoordinatesFromAddress(
     String address,
   ) async {
@@ -67,12 +63,10 @@ class GoogleGeocodingService {
       }
       return null;
     } catch (e) {
-      debugPrint('Error in geocoding: $e');
       return null;
     }
   }
 
-  /// Parse geocoding API response into structured data
   static Map<String, dynamic> _parseGeocodingResult(
     Map<String, dynamic> result,
   ) {
@@ -114,7 +108,6 @@ class GoogleGeocodingService {
     };
   }
 
-  /// Search for places by query string
   static Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     if (_apiKey.isEmpty) {
       throw Exception('Google Maps API key not found in .env file');
@@ -143,18 +136,15 @@ class GoogleGeocodingService {
       }
       return [];
     } catch (e) {
-      debugPrint('Error searching places: $e');
       return [];
     }
   }
 
-  /// Test if API key is properly loaded from environment
   static Future<bool> testApiKeyLoaded() async {
     try {
       final apiKey = dotenv.env['GMAPS_API_KEY'];
       return apiKey != null && apiKey.isNotEmpty;
     } catch (e) {
-      debugPrint('Error testing API key: $e');
       return false;
     }
   }

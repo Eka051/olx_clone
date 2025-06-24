@@ -118,8 +118,6 @@ class PremiumPackageProvider extends ChangeNotifier {
             ),
           );
 
-          debugPrint(finishUrl);
-
           if (result == 'success' && context.mounted) {
             _showVerifyingDialog(context);
             await context

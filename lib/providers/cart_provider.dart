@@ -23,7 +23,6 @@ class CartProvider with ChangeNotifier {
 
   void updateAuth(AuthProviderApp auth) {
     _token = auth.jwtToken;
-    debugPrint('[CartProvider] JWT Token: $_token');
     if (_token != null) {
       fetchCart();
     } else {
@@ -39,7 +38,6 @@ class CartProvider with ChangeNotifier {
   }
 
   Future<void> fetchCart() async {
-    debugPrint('CartProvider.fetchCart: jwtToken=$_token');
     if (_token == null) return;
     _isLoading = true;
     _errorMessage = null;
@@ -51,9 +49,6 @@ class CartProvider with ChangeNotifier {
         headers: {'Authorization': 'Bearer $_token'},
       );
 
-      debugPrint('[CartProvider] fetchCart statusCode: ${response.statusCode}');
-      debugPrint('[CartProvider] fetchCart response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         List<dynamic> cartData = [];
@@ -64,7 +59,6 @@ class CartProvider with ChangeNotifier {
         } else if (data['data'] is Map && data['data']['cartItems'] is List) {
           cartData = data['data']['cartItems'];
         }
-        debugPrint('[CartProvider] Parsed cartData: $cartData');
         _cartItems = cartData.map((item) => CartItem.fromJson(item)).toList();
         _calculateTotals();
       } else {
@@ -75,7 +69,6 @@ class CartProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Gagal memuat keranjang: ${e.toString()}';
-      debugPrint(e.toString());
       _cartItems = [];
       _cartTotalPrice = 0;
     } finally {
@@ -133,7 +126,7 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  Future<void> removeFromCart(int cartItemId) async {
+  Future<void> removeFromCart(String cartItemId) async {
     if (_token == null) return;
 
     final originalItems = List<CartItem>.from(_cartItems);
@@ -179,19 +172,23 @@ class CartProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData['data'] != null &&
-            responseData['data']['redirectUrl'] != null &&
-            responseData['data']['finishUrl'] != null) {
-          final String redirectUrl = responseData['data']['redirectUrl'];
-          final String finishUrl = responseData['data']['finishUrl'];
-          return {'redirectUrl': redirectUrl, 'finishUrl': finishUrl};
+        if (response.body.isEmpty) {
+          _errorMessage = 'Gagal membuat pesanan: Response kosong dari server.';
         } else {
-          _errorMessage =
-              responseData['message'] ?? 'Respons checkout tidak valid.';
+          final responseData = json.decode(response.body);
+          if (responseData['data'] != null &&
+              responseData['data']['redirectUrl'] != null &&
+              responseData['data']['finishUrl'] != null) {
+            final String redirectUrl = responseData['data']['redirectUrl'];
+            final String finishUrl = responseData['data']['finishUrl'];
+            return {'redirectUrl': redirectUrl, 'finishUrl': finishUrl};
+          } else {
+            _errorMessage =
+                responseData['message'] ?? 'Respons checkout tidak valid.';
+          }
         }
       } else {
-        final errorData = json.decode(response.body);
+        final errorData = response.body.isNotEmpty ? json.decode(response.body) : {};
         _errorMessage = errorData['message'] ?? 'Gagal membuat pesanan.';
       }
     } catch (e) {
@@ -210,10 +207,10 @@ class CartProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    List<int> itemIds = _cartItems.map((item) => item.id).toList();
+    List<String> itemIds = _cartItems.map((item) => item.id).toList();
 
     try {
-      for (int id in itemIds) {
+      for (String id in itemIds) {
         final response = await http.delete(
           Uri.parse('$_baseUrl/cart/$id'),
           headers: {'Authorization': 'Bearer $_token'},

@@ -47,14 +47,11 @@ class NotificationProvider extends ChangeNotifier {
           'Authorization': 'Bearer $_token',
         },
       );
-      // debugPrint('NOTIF GET RESPONSE: ' + response.body);
       if (response.statusCode == 200) {
         final notificationResponse = NotificationResponse.fromJson(
           json.decode(response.body),
         );
-        debugPrint(
-          'NOTIF PARSED: ' + notificationResponse.data.length.toString(),
-        );
+        
         if (notificationResponse.success) {
           _notifications
             ..clear()

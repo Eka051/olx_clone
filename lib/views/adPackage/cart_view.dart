@@ -146,7 +146,7 @@ class _CartViewState extends State<CartView> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => cartProvider.removeFromCart(cartItem.id.toString()),
+                onPressed: () => cartProvider.removeFromCart(cartItem.id),
                 icon: const Icon(Icons.delete_outline, size: 20),
                 label: const Text('Hapus'),
                 style: TextButton.styleFrom(foregroundColor: Colors.red[700]),
@@ -274,9 +274,10 @@ class PaymentResultView extends StatelessWidget {
     final IconData icon =
         isSuccess ? Icons.check_circle_outline : Icons.error_outline;
     final String title = isSuccess ? 'Pembayaran Berhasil' : 'Pembayaran Gagal';
-    final String message = isSuccess
-        ? 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} telah kami terima.'
-        : 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} tidak dapat diproses. Silakan coba lagi atau hubungi dukungan.';
+    final String message =
+        isSuccess
+            ? 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} telah kami terima.'
+            : 'Pembayaran senilai Rp ${_formatPrice(totalAmount)} tidak dapat diproses. Silakan coba lagi atau hubungi dukungan.';
 
     return Scaffold(
       appBar: AppBar(
@@ -301,11 +302,7 @@ class PaymentResultView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: color,
-                size: 80,
-              ),
+              Icon(icon, color: color, size: 80),
               const SizedBox(height: 24),
               Text(
                 title,
@@ -323,8 +320,8 @@ class PaymentResultView extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () =>
-                    Navigator.popUntil(context, (route) => route.isFirst),
+                onPressed:
+                    () => Navigator.popUntil(context, (route) => route.isFirst),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF002F34),
                   foregroundColor: Colors.white,
@@ -348,4 +345,3 @@ class PaymentResultView extends StatelessWidget {
     );
   }
 }
-
