@@ -23,6 +23,8 @@ import 'package:olx_clone/views/auth/login_email.dart';
 import 'package:olx_clone/views/auth/login_phone.dart';
 import 'package:olx_clone/views/category/category_view.dart';
 import 'package:olx_clone/views/category/category_products_view.dart';
+import 'package:olx_clone/views/home/detail_iklan.dart';
+import 'package:olx_clone/views/home/halaman_new.dart';
 import 'package:olx_clone/views/main_screen.dart';
 import 'package:olx_clone/views/adPackage/ad_package_view.dart';
 import 'package:olx_clone/views/adPackage/cart_view.dart';
@@ -151,6 +153,15 @@ class OlxClone extends StatelessWidget {
         AppRoutes.cart: (_) => const CartView(),
         AppRoutes.editProfile: (_) => const EditProfileView(),
         AppRoutes.notification: (_) => const NotificationView(),
+        AppRoutes.newPage: (_) => const HalamanNew(),
+        AppRoutes.detailIklan: (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          final images = args?['images'] as List<String>? ?? [];
+          final initialIndex = args?['initialIndex'] as int? ?? 0;
+          return DetailIklan(images: images, initialIndex: initialIndex);
+        },
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: (settings) {

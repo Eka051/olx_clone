@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:olx_clone/utils/const.dart';
 import 'package:provider/provider.dart';
 import 'package:olx_clone/providers/profile_provider.dart';
@@ -388,6 +389,13 @@ class _ProfileViewState extends State<ProfileView> {
         'title': 'Program Penjual',
         'onTap': () {
           Navigator.pushNamed(context, AppRoutes.premiumPackages);
+        },
+      },
+      {
+        'icon': Icons.stacked_bar_chart,
+        'title': 'notification',
+        'onTap': () {
+          Navigator.pushNamed(context, AppRoutes.notification);
         },
       },
       {

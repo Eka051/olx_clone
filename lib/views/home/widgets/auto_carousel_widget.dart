@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:olx_clone/utils/const.dart';
 import 'dart:async';
 
 import 'package:olx_clone/utils/theme.dart';
@@ -77,29 +78,41 @@ class _AutoCarouselWidgetState extends State<AutoCarouselWidget> {
                 },
                 itemCount: widget.bannerImages.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child:
-                          widget.bannerImages[index].startsWith('http')
-                              ? Image.network(
-                                widget.bannerImages[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return _buildPlaceholder(index);
-                                },
-                              )
-                              : Image.asset(
-                                widget.bannerImages[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return _buildPlaceholder(index);
-                                },
-                              ),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.detailIklan,
+                        arguments: {
+                          'images': widget.bannerImages,
+                          'initialIndex': index,
+                        },
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child:
+                            widget.bannerImages[index].startsWith('http')
+                                ? Image.network(
+                                  widget.bannerImages[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return _buildPlaceholder(index);
+                                  },
+                                )
+                                : Image.asset(
+                                  widget.bannerImages[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return _buildPlaceholder(index);
+                                  },
+                                ),
+                      ),
                     ),
                   );
                 },

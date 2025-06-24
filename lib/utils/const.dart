@@ -47,6 +47,8 @@ class AppRoutes {
   static const String cart = '/cart';
   static const String editProfile = '/edit-profile';
   static const String notification = '/notification';
+  static const String newPage = '/newpage';
+  static const String detailIklan = '/detail-iklan';
 }
 
 class AppDimensions {

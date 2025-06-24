@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:olx_clone/views/home/halaman_new.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 
@@ -31,6 +32,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     const SellScreen(),
     const MyAdsView(),
     const ProfileView(),
+    const HalamanNew(),
   ];
 
   void _onItemTapped(int index) {
@@ -141,6 +143,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       iconOutlined: Icons.person_outline_rounded,
                       iconFilled: Icons.person_rounded,
                       label: 'Akun Saya',
+                    ),
+                    _buildNavItem(
+                      index: 5,
+                      iconOutlined: Icons.pages_outlined,
+                      iconFilled: Icons.pages,
+                      label: 'Halaman Baru',
                     ),
                   ],
                 ),
