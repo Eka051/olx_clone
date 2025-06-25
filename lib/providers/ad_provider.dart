@@ -50,7 +50,10 @@ class AdProvider with ChangeNotifier {
   }
 
   void _calculateTotals() {
-    _cartTotalPrice = _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
+    _cartTotalPrice = _cartItems.fold(
+      0,
+      (sum, item) => sum + item.price * item.quantity,
+    );
     notifyListeners();
   }
 
@@ -89,8 +92,9 @@ class AdProvider with ChangeNotifier {
         headers: {'Authorization': 'Bearer $_token'},
       );
       await _handleApiResponse(response, (data) {
-        if(data['data'] != null) {
-          _packages = (data['data'] as List).map((p) => AdPackage.fromJson(p)).toList();
+        if (data['data'] != null) {
+          _packages =
+              (data['data'] as List).map((p) => AdPackage.fromJson(p)).toList();
         } else {
           _packages = [];
         }
@@ -115,8 +119,8 @@ class AdProvider with ChangeNotifier {
       );
       await _handleApiResponse(response, (data) {
         if (data['data'] != null) {
-        _myProducts =
-            (data['data'] as List).map((p) => Product.fromJson(p)).toList();
+          _myProducts =
+              (data['data'] as List).map((p) => Product.fromJson(p)).toList();
         } else {
           _myProducts = [];
         }
@@ -140,9 +144,10 @@ class AdProvider with ChangeNotifier {
       );
       await _handleApiResponse(response, (data) {
         if (data['data'] != null) {
-          _cartItems = (data['data'] as List)
-              .map((item) => CartItem.fromJson(item))
-              .toList();
+          _cartItems =
+              (data['data'] as List)
+                  .map((item) => CartItem.fromJson(item))
+                  .toList();
           _calculateTotals();
         } else {
           _cartItems = [];
@@ -166,7 +171,11 @@ class AdProvider with ChangeNotifier {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
         },
-        body: json.encode({'adPackageId': package.id, 'productId': productId}),
+        body: json.encode({
+          'adPackageId': package.id,
+          'productId': productId,
+          'price': package.price, // harga dari ad package
+        }),
       );
       await _handleApiResponse(response, (data) async {
         await fetchCart();
@@ -199,10 +208,10 @@ class AdProvider with ChangeNotifier {
     if (itemIndex == -1 || quantity <= 0) return;
 
     final oldItem = _cartItems[itemIndex];
-    final unitPrice = (oldItem.totalPrice / oldItem.quantity).round();
+    final unitPrice = (oldItem.price / oldItem.quantity).round();
     _cartItems[itemIndex] = oldItem.copyWith(
       quantity: quantity,
-      totalPrice: unitPrice * quantity,
+      price: unitPrice * quantity,
     );
     _calculateTotals();
     notifyListeners();
@@ -249,13 +258,13 @@ class AdProvider with ChangeNotifier {
           final String finishUrl = responseData['data']['finishUrl'];
           return {'paymentUrl': paymentUrl, 'finishUrl': finishUrl};
         } else {
-          _errorMessage = responseData['message'] ?? 'Respons checkout tidak valid.';
+          _errorMessage =
+              responseData['message'] ?? 'Respons checkout tidak valid.';
         }
       } else {
         final errorData = json.decode(response.body);
         _errorMessage = errorData['message'] ?? 'Gagal membuat pesanan.';
       }
-
     } catch (e) {
       _errorMessage = 'Gagal membuat pesanan: ${e.toString()}';
     } finally {

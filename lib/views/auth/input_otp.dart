@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:olx_clone/providers/auth_provider.dart';
 import 'package:olx_clone/utils/theme.dart';
+import 'package:olx_clone/widgets/app_filled_button.dart';
 import 'package:provider/provider.dart';
 
 class InputOtp extends StatefulWidget {
@@ -196,7 +197,6 @@ class _InputOtpState extends State<InputOtp> {
                                               context,
                                             ).previousFocus();
                                           }
-
                                           authProvider.handleOtpInputChange(
                                             context,
                                           );
@@ -207,7 +207,6 @@ class _InputOtpState extends State<InputOtp> {
                                 }),
                               ),
                               const SizedBox(height: 10),
-
                               TextButton(
                                 onPressed:
                                     authProvider.isVerifying
@@ -235,6 +234,24 @@ class _InputOtpState extends State<InputOtp> {
                                     child: CircularProgressIndicator(),
                                   ),
                                 ),
+                              const SizedBox(height: 50),
+                              AppFilledButton(
+                                onPressed:
+                                    authProvider.isVerifying
+                                        ? null
+                                        : () async {
+                                          await authProvider.submitOtp(context);
+                                        },
+                                text: 'Verifikasi OTP',
+                                color:
+                                    authProvider.isEmailValid
+                                        ? primaryColor
+                                        : Colors.grey,
+                                textColor: Colors.white,
+                                fontSize: 16,
+                                widthButton: double.infinity,
+                                isTextCentered: true,
+                              ),
                             ],
                           ),
                         ),

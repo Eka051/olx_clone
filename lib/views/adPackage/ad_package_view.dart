@@ -284,137 +284,70 @@ class _AdPackageViewState extends State<AdPackageView> {
     AdPackage package,
     AdProvider provider,
   ) async {
-    final selectedProduct = await showDialog<Product>(
+    final selectedProduct = await showModalBottomSheet<Product>(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 24,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.of(context).colors.primary,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      'Pilih Iklan',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          builder: (_, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Pilih Iklan untuk Dipromosikan',
+                    style: AppTheme.of(context).textStyle.titleMedium,
                   ),
-                  Consumer<AdProvider>(
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: Consumer<AdProvider>(
                     builder: (context, adProvider, child) {
                       if (adProvider.isLoadingMyProducts) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          child: SizedBox(
-                            height: 100,
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        );
+                        return const Center(child: CircularProgressIndicator());
                       }
                       if (adProvider.myProducts.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          child: Text(
-                            'Anda tidak punya iklan untuk dipromosikan.',
-                            style: TextStyle(
-                              color: Color(0xFF002F34),
-                              fontSize: 15,
-                            ),
-                          ),
-                        );
+                        return const Center(
+                            child: Text('Anda tidak memiliki iklan aktif.'));
                       }
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: SizedBox(
-                          width: double.maxFinite,
-                          height: 220,
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: adProvider.myProducts.length,
-                            separatorBuilder:
-                                (context, i) =>
-                                    Divider(color: Colors.grey[300], height: 1),
-                            itemBuilder: (context, index) {
-                              final product = adProvider.myProducts[index];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 0,
-                                  vertical: 0,
-                                ),
-                                title: Text(
-                                  product.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF002F34),
-                                  ),
-                                ),
-                                trailing: Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 18,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onTap: () {
-                                  Navigator.of(dialogContext).pop(product);
-                                },
-                              );
-                            },
-                          ),
-                        ),
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: adProvider.myProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = adProvider.myProducts[index];
+                          return ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.network(
+                                product.images.isNotEmpty
+                                    ? product.images.first
+                                    : 'https://via.placeholder.com/150',
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            title: Text(product.title,
+                                style: AppTheme.of(context).textStyle.bodyMedium),
+                            subtitle: Text(
+                                'Rp ${_formatPrice(product.price)}',
+                                style: AppTheme.of(context).textStyle.bodySmall),
+                            onTap: () => Navigator.of(dialogContext).pop(product),
+                          );
+                        },
                       );
                     },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12, right: 16),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        child: const Text('Batal'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

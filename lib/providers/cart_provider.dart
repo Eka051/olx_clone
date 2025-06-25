@@ -39,11 +39,6 @@ class CartProvider with ChangeNotifier {
     _adProvider = adProvider;
   }
 
-  void _calculateTotals() {
-    _cartTotalPrice = _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
-    notifyListeners();
-  }
-
   Future<void> fetchCart() async {
     if (_token == null) return;
     _isLoading = true;
@@ -58,41 +53,13 @@ class CartProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        List<dynamic> cartData = [];
-        if (data['data'] is List) {
-          cartData = data['data'];
-        } else if (data['data'] is Map && data['data']['items'] is List) {
-          cartData = data['data']['items'];
-        } else if (data['data'] is Map && data['data']['cartItems'] is List) {
-          cartData = data['data']['cartItems'];
-        }
-        // DEBUG: Print cartData
-        debugPrint('cartData: ' + cartData.toString());
+        final List<dynamic> cartData = data['data'] ?? [];
+
         _cartItems =
             cartData.map((item) {
-              int price = item['totalPrice'] ?? item['adPackagePrice'] ?? item['price'] ?? 0;
-              // Jika harga tetap 0, coba ambil dari AdProvider
-              if (price == 0 && _adProvider != null) {
-                final adPkg = _adProvider!.adPackages.firstWhere(
-                  (pkg) => pkg.id == item['adPackageId'],
-                  orElse: () => null,
-                );
-                if (adPkg != null && adPkg.price != null) {
-                  price = adPkg.price!;
-                }
-              }
-              debugPrint('[CartProvider] CartItem id: \\${item['id']} price: \\${price}');
-              return CartItem(
-                id: item['id']?.toString() ?? '',
-                adPackageId: item['adPackageId'] ?? 0,
-                productId: item['productId'] ?? 0,
-                adPackageName: item['adPackageName'] ?? '',
-                quantity: item['quantity'] ?? 1,
-                totalPrice: price,
-              );
+              return CartItem.fromJson(item);
             }).toList();
-        // DEBUG: Print mapped _cartItems
-        debugPrint('_cartItems: ' + _cartItems.map((e) => e.toString()).toList().toString());
+
         _calculateTotals();
       } else {
         final errorData = json.decode(response.body);
@@ -110,9 +77,15 @@ class CartProvider with ChangeNotifier {
     }
   }
 
+  void _calculateTotals() {
+    _cartTotalPrice = _cartItems.fold(0, (sum, item) => sum + item.price);
+    notifyListeners();
+  }
+
   Future<void> addToCart({
     int? adPackageId,
     int? productId,
+    int? price,
     int quantity = 1,
   }) async {
     if (_token == null) {
@@ -120,8 +93,8 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (adPackageId == null || productId == null) {
-      _errorMessage = 'Product ID dan Ad Package ID harus disediakan.';
+    if (adPackageId == null || productId == null || price == null) {
+      _errorMessage = 'Product ID, Ad Package ID, dan harga harus disediakan.';
       notifyListeners();
       return;
     }
@@ -140,6 +113,7 @@ class CartProvider with ChangeNotifier {
         body: json.encode({
           'adPackageId': adPackageId,
           'productId': productId,
+          'price': price, // harga dari ad package
           'quantity': quantity,
         }),
       );
@@ -152,7 +126,7 @@ class CartProvider with ChangeNotifier {
             errorData['message'] ?? 'Gagal menambahkan ke keranjang.';
       }
     } catch (e) {
-      _errorMessage = 'Gagal menambahkan ke keranjang: ${e.toString()}';
+      _errorMessage = 'Gagal menambahkan ke keranjang: e.toString()';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -204,20 +178,18 @@ class CartProvider with ChangeNotifier {
         }),
       );
 
-      // DEBUG: Print status code and response body
-      debugPrint('CHECKOUT status: \\${response.statusCode}');
-      debugPrint('CHECKOUT body: \\${response.body}');
+      debugPrint('CHECKOUT status: ${response.statusCode}');
+      debugPrint('CHECKOUT body: ${response.body}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.body.isEmpty) {
           _errorMessage = 'Gagal membuat pesanan: Response kosong dari server.';
         } else {
           final responseData = json.decode(response.body);
           if (responseData['data'] != null &&
-              responseData['data']['redirectUrl'] != null &&
-              responseData['data']['finishUrl'] != null) {
-            final String redirectUrl = responseData['data']['redirectUrl'];
-            final String finishUrl = responseData['data']['finishUrl'];
+              responseData['data']['paymentUrl'] != null) {
+            final String redirectUrl = responseData['data']['paymentUrl'];
+            final String finishUrl = responseData['data']['finishUrl'] ?? '';
             return {'redirectUrl': redirectUrl, 'finishUrl': finishUrl};
           } else {
             _errorMessage =
@@ -273,7 +245,7 @@ class CartProvider with ChangeNotifier {
       final String? paymentUrl = checkoutData['redirectUrl'];
       final String? finishUrl = checkoutData['finishUrl'];
 
-      if (paymentUrl == null || finishUrl == null) {
+      if (paymentUrl == null) {
         _showErrorDialog(context, 'Data pembayaran tidak valid dari server.');
         return;
       }
@@ -282,8 +254,10 @@ class CartProvider with ChangeNotifier {
         context,
         MaterialPageRoute(
           builder:
-              (context) =>
-                  PaymentWebview(paymentUrl: paymentUrl, finishUrl: finishUrl),
+              (context) => PaymentWebview(
+                paymentUrl: paymentUrl,
+                finishUrl: finishUrl ?? '',
+              ),
         ),
       );
 

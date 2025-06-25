@@ -3,35 +3,26 @@ class CartItem {
   final int adPackageId;
   final int productId;
   final String adPackageName;
+  final int price;
   final int quantity;
-  final int totalPrice;
 
   CartItem({
     required this.id,
     required this.adPackageId,
     required this.productId,
     required this.adPackageName,
+    required this.price,
     required this.quantity,
-    required this.totalPrice,
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    // Ambil harga dari adPackagePrice, price, totalPrice, atau fallback 0
-    int price = 0;
-    if (json['totalPrice'] != null) {
-      price = json['totalPrice'] ?? 0;
-    } else if (json['adPackagePrice'] != null) {
-      price = json['adPackagePrice'] ?? 0;
-    } else if (json['price'] != null) {
-      price = json['price'] ?? 0;
-    }
     return CartItem(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] ?? '',
       adPackageId: json['adPackageId'] ?? 0,
       productId: json['productId'] ?? 0,
       adPackageName: json['adPackageName'] ?? '',
+      price: json['price'] ?? 0,
       quantity: json['quantity'] ?? 1,
-      totalPrice: price,
     );
   }
 
@@ -41,7 +32,7 @@ class CartItem {
     'productId': productId,
     'adPackageName': adPackageName,
     'quantity': quantity,
-    'totalPrice': totalPrice,
+    'price': price,
   };
 
   CartItem copyWith({
@@ -50,7 +41,7 @@ class CartItem {
     int? productId,
     String? adPackageName,
     int? quantity,
-    int? totalPrice,
+    int? price,
   }) {
     return CartItem(
       id: id ?? this.id,
@@ -58,7 +49,7 @@ class CartItem {
       productId: productId ?? this.productId,
       adPackageName: adPackageName ?? this.adPackageName,
       quantity: quantity ?? this.quantity,
-      totalPrice: totalPrice ?? this.totalPrice,
+      price: price ?? this.price,
     );
   }
 }
