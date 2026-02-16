@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:olx_clone/models/category.dart';
 
 class CategoryProvider with ChangeNotifier {
-  final String _backendUrl = 'https://olx-api-production.up.railway.app';
+  final String _backendUrl = 'https://olx-api.dianeka.web.id';
   final List<Category> _categories = [];
   List<Category> get categories => _categories;
   bool _isLoading = false;

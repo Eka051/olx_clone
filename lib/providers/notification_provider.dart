@@ -10,8 +10,7 @@ class NotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  final String _baseUrl =
-      'https://olx-api-production.up.railway.app/api/notifications';
+  final String _baseUrl = 'https://olx-api.dianeka.web.id/api/notifications';
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
@@ -51,7 +50,7 @@ class NotificationProvider extends ChangeNotifier {
         final notificationResponse = NotificationResponse.fromJson(
           json.decode(response.body),
         );
-        
+
         if (notificationResponse.success) {
           _notifications
             ..clear()

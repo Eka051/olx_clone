@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class PremiumPackageProvider extends ChangeNotifier {
   final AuthProviderApp _authProvider;
-  final String _apiBaseUrl = 'https://olx-api-production.up.railway.app/api';
+  final String _apiBaseUrl = 'https://olx-api.dianeka.web.id/api';
 
   List<PremiumPackage> _packages = [];
   bool _isLoading = false;

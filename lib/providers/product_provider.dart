@@ -44,7 +44,7 @@ class ProductProvider extends ChangeNotifier {
   Set<int> _favoriteProductIds = {};
 
   final ImagePicker _imagePicker = ImagePicker();
-  final String _apiBaseUrl = 'https://olx-api-production.up.railway.app/api';
+  final String _apiBaseUrl = 'https://olx-api.dianeka.web.id/api';
 
   int get currentStep => _currentStep;
   List<File> get images => _images;

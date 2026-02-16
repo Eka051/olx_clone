@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -22,15 +20,17 @@ class AuthProviderApp with ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final TextEditingController phoneNumberController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final List<TextEditingController> otpControllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> otpControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
 
   String? _currentVerificationId;
   String? _currentOtpType;
   String? _currentPhoneNumber;
   String? _currentEmail;
 
-  final String _backendUrl = 'https://olx-api-production.up.railway.app';
+  final String _backendUrl = 'https://olx-api.dianeka.web.id';
   String? _jwtToken;
 
   bool get isLoggedIn => _isLoggedIn;
@@ -112,29 +112,32 @@ class AuthProviderApp with ChangeNotifier {
     clearOtpFields();
     notifyListeners();
   }
-  
+
   void handleOtpInputChange(BuildContext context) {
     final otp = otpControllers.map((c) => c.text).join();
     if (otp.length == 6 &&
         !otpControllers.any((c) => c.text.isEmpty) &&
-        !isVerifying) {
-    }
+        !isVerifying) {}
   }
-  
+
   Future<void> submitOtp(BuildContext context) async {
     if (_isVerifying) return;
-    
+
     _isVerifying = true;
     notifyListeners();
 
     final otp = otpControllers.map((c) => c.text).join();
     if (otp.length != 6) {
-        _showSnackBar(context, "Harap isi 6 digit OTP dengan lengkap.", Colors.red);
-        _isVerifying = false;
-        notifyListeners();
-        return;
+      _showSnackBar(
+        context,
+        "Harap isi 6 digit OTP dengan lengkap.",
+        Colors.red,
+      );
+      _isVerifying = false;
+      notifyListeners();
+      return;
     }
-    
+
     bool success = false;
     String finalErrorMessage = 'Kode OTP tidak valid atau terjadi kesalahan.';
 
@@ -148,48 +151,61 @@ class AuthProviderApp with ChangeNotifier {
       }
 
       if (success && context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else if (context.mounted) {
         _showSnackBar(context, finalErrorMessage, Colors.red);
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(context, 'Terjadi kesalahan: ${e.toString()}', Colors.red);
+        _showSnackBar(
+          context,
+          'Terjadi kesalahan: ${e.toString()}',
+          Colors.red,
+        );
       }
     } finally {
       _isVerifying = false;
       notifyListeners();
     }
   }
-  
-  Future<bool> _verifyPhoneOtpAndLogin(String otp) async {
-      try {
-        final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-          verificationId: _currentVerificationId!,
-          smsCode: otp,
-        );
-        UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
-        _firebaseUser = userCredential.user;
 
-        if (_firebaseUser != null) {
-          final String? firebaseIdToken = await _firebaseUser!.getIdToken(true);
-          if (firebaseIdToken != null) {
-            return await _sendFirebaseTokenToBackend(firebaseIdToken);
-          } else {
-            errorMessage = "Gagal mendapatkan token Firebase setelah verifikasi OTP.";
-            return false;
-          }
+  Future<bool> _verifyPhoneOtpAndLogin(String otp) async {
+    try {
+      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _currentVerificationId!,
+        smsCode: otp,
+      );
+      UserCredential userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      _firebaseUser = userCredential.user;
+
+      if (_firebaseUser != null) {
+        final String? firebaseIdToken = await _firebaseUser!.getIdToken(true);
+        if (firebaseIdToken != null) {
+          return await _sendFirebaseTokenToBackend(firebaseIdToken);
         } else {
-          errorMessage = "Gagal login ke Firebase dengan OTP.";
+          errorMessage =
+              "Gagal mendapatkan token Firebase setelah verifikasi OTP.";
           return false;
         }
-      } catch (e) {
-        errorMessage = "Error verifikasi OTP telepon: ${e.toString()}";
+      } else {
+        errorMessage = "Gagal login ke Firebase dengan OTP.";
         return false;
       }
+    } catch (e) {
+      errorMessage = "Error verifikasi OTP telepon: ${e.toString()}";
+      return false;
+    }
   }
 
-  void _showSnackBar(BuildContext context, String message, Color backgroundColor) {
+  void _showSnackBar(
+    BuildContext context,
+    String message,
+    Color backgroundColor,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -200,7 +216,9 @@ class AuthProviderApp with ChangeNotifier {
   }
 
   String getOtpDisplayTarget() {
-    return _currentOtpType == 'phone' ? _currentPhoneNumber ?? '' : _currentEmail ?? '';
+    return _currentOtpType == 'phone'
+        ? _currentPhoneNumber ?? ''
+        : _currentEmail ?? '';
   }
 
   String getResendButtonText() {
@@ -217,13 +235,25 @@ class AuthProviderApp with ChangeNotifier {
 
   Future<void> handleResendOtp(BuildContext context) async {
     if (_currentOtpType == 'phone' && _currentPhoneNumber != null) {
-      await verifyPhoneNumberWithDialog(context, _currentPhoneNumber!, '/otp_phone_screen_route');
+      await verifyPhoneNumberWithDialog(
+        context,
+        _currentPhoneNumber!,
+        '/otp_phone_screen_route',
+      );
     } else if (_currentOtpType == 'email' && _currentEmail != null) {
       bool sent = await requestEmailOtp(_currentEmail!);
       if (sent && context.mounted) {
-        _showSnackBar(context, successMessage ?? 'Kode OTP telah dikirim ulang.', Colors.green);
+        _showSnackBar(
+          context,
+          successMessage ?? 'Kode OTP telah dikirim ulang.',
+          Colors.green,
+        );
       } else if (context.mounted) {
-        _showSnackBar(context, errorMessage ?? 'Gagal mengirim ulang OTP.', Colors.red);
+        _showSnackBar(
+          context,
+          errorMessage ?? 'Gagal mengirim ulang OTP.',
+          Colors.red,
+        );
       }
     }
   }
@@ -249,7 +279,9 @@ class AuthProviderApp with ChangeNotifier {
   bool validateEmail(String email) {
     if (email.isEmpty) {
       _isEmailValid = false;
-    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email)) {
+    } else if (!RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(email)) {
       _isEmailValid = false;
     } else {
       _isEmailValid = true;
@@ -257,7 +289,7 @@ class AuthProviderApp with ChangeNotifier {
     notifyListeners();
     return _isEmailValid;
   }
-  
+
   Future<bool> _sendFirebaseTokenToBackend(String firebaseIdToken) async {
     final url = Uri.parse('$_backendUrl/api/auth/firebase');
     final headers = {'Content-Type': 'application/json'};
@@ -274,7 +306,8 @@ class AuthProviderApp with ChangeNotifier {
           return true;
         }
       }
-      errorMessage = responseData['message'] ?? 'Gagal otentikasi dengan server.';
+      errorMessage =
+          responseData['message'] ?? 'Gagal otentikasi dengan server.';
       return false;
     } catch (e) {
       errorMessage = 'Error komunikasi backend: ${e.toString()}';
@@ -296,13 +329,16 @@ class AuthProviderApp with ChangeNotifier {
         return false;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      
-      UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+
+      UserCredential userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
       _firebaseUser = userCredential.user;
 
       if (_firebaseUser != null) {
@@ -314,6 +350,7 @@ class AuthProviderApp with ChangeNotifier {
       return false;
     } catch (e) {
       errorMessage = e.toString();
+      print('Error signing in with Google: $errorMessage');
       return false;
     } finally {
       _isLoading = false;
@@ -321,21 +358,27 @@ class AuthProviderApp with ChangeNotifier {
     }
   }
 
-  Future<void> verifyPhoneNumberForOtp(String rawPhoneNumber, Function(String, String) onCodeSent, Function(String) onError) async {
+  Future<void> verifyPhoneNumberForOtp(
+    String rawPhoneNumber,
+    Function(String, String) onCodeSent,
+    Function(String) onError,
+  ) async {
     String formattedPhoneNumber = '+62$rawPhoneNumber';
     try {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: formattedPhoneNumber,
         verificationCompleted: (_) {},
         verificationFailed: (e) => onError(e.message ?? "Verifikasi gagal"),
-        codeSent: (verificationId, _) => onCodeSent(verificationId, formattedPhoneNumber),
+        codeSent:
+            (verificationId, _) =>
+                onCodeSent(verificationId, formattedPhoneNumber),
         codeAutoRetrievalTimeout: (_) {},
       );
     } catch (e) {
       onError(e.toString());
     }
   }
-  
+
   Future<bool> signUpWithEmail(String email) async {
     return await requestEmailOtp(email);
   }
@@ -345,9 +388,12 @@ class AuthProviderApp with ChangeNotifier {
     errorMessage = null;
     successMessage = null;
     notifyListeners();
-    
+
     final url = Uri.parse('$_backendUrl/api/auth/email/otp');
-    final headers = {'Content-Type': 'application/json', 'accept': 'text/plain'};
+    final headers = {
+      'Content-Type': 'application/json',
+      'accept': 'text/plain',
+    };
     final body = jsonEncode({'email': email});
 
     try {
@@ -355,7 +401,8 @@ class AuthProviderApp with ChangeNotifier {
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 201 && responseData['success'] == true) {
-        successMessage = responseData['message'] ?? 'Kode OTP berhasil dikirim.';
+        successMessage =
+            responseData['message'] ?? 'Kode OTP berhasil dikirim.';
         setupOtpSession(email: email, type: 'email');
         return true;
       } else {
@@ -373,30 +420,33 @@ class AuthProviderApp with ChangeNotifier {
 
   Future<bool> verifyCodeEmail(String email, String code) async {
     final url = Uri.parse('$_backendUrl/api/auth/email/verify');
-    final headers = {'Content-Type': 'application/json', 'accept': 'text/plain'};
+    final headers = {
+      'Content-Type': 'application/json',
+      'accept': 'text/plain',
+    };
     final body = jsonEncode({'email': email, 'otp': code});
 
     try {
-        final response = await http.post(url, headers: headers, body: body);
-        final responseData = jsonDecode(response.body);
+      final response = await http.post(url, headers: headers, body: body);
+      final responseData = jsonDecode(response.body);
 
-        if (response.statusCode == 200 && responseData['success'] == true) {
-            final token = responseData['data']?['token'];
-            if (token != null) {
-                await _saveJwtToken(token);
-                successMessage = responseData['message'] ?? 'Verifikasi berhasil.';
-                return true;
-            } else {
-                errorMessage = 'Token tidak ditemukan dalam respons server.';
-                return false;
-            }
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        final token = responseData['data']?['token'];
+        if (token != null) {
+          await _saveJwtToken(token);
+          successMessage = responseData['message'] ?? 'Verifikasi berhasil.';
+          return true;
         } else {
-            errorMessage = responseData['message'] ?? 'Verifikasi gagal.';
-            return false;
+          errorMessage = 'Token tidak ditemukan dalam respons server.';
+          return false;
         }
-    } catch (e) {
-        errorMessage = 'Terjadi kesalahan saat verifikasi: ${e.toString()}';
+      } else {
+        errorMessage = responseData['message'] ?? 'Verifikasi gagal.';
         return false;
+      }
+    } catch (e) {
+      errorMessage = 'Terjadi kesalahan saat verifikasi: ${e.toString()}';
+      return false;
     }
   }
 
@@ -415,7 +465,11 @@ class AuthProviderApp with ChangeNotifier {
     }
   }
 
-  Future<void> verifyPhoneNumberWithDialog(BuildContext context, String rawPhoneNumber, String routeName) async {
+  Future<void> verifyPhoneNumberWithDialog(
+    BuildContext context,
+    String rawPhoneNumber,
+    String routeName,
+  ) async {
     _isLoading = true;
     notifyListeners();
 
@@ -430,7 +484,11 @@ class AuthProviderApp with ChangeNotifier {
       (verificationId, formattedPhoneNumber) {
         if (context.mounted) {
           Navigator.pop(context);
-          setupOtpSession(phoneNumber: formattedPhoneNumber, verificationId: verificationId, type: 'phone');
+          setupOtpSession(
+            phoneNumber: formattedPhoneNumber,
+            verificationId: verificationId,
+            type: 'phone',
+          );
           Navigator.pushNamed(context, routeName);
         }
       },

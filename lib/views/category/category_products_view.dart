@@ -40,7 +40,7 @@ class _CategoryProductsViewState extends State<CategoryProductsView> {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://olx-api-production.up.railway.app/api/products/categories/${widget.categoryId}',
+          'https://olx-api.dianeka.web.id/api/products/categories/${widget.categoryId}',
         ),
         headers: {'Content-Type': 'application/json'},
       );

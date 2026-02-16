@@ -2,8 +2,7 @@ import 'dart:async';
 import 'package:olx_clone/models/message.dart';
 
 class SignalRService {
-  static const String hubUrl =
-      'https://olx-api-production.up.railway.app/chathub';
+  static const String hubUrl = 'https://olx-api.dianeka.web.id/chathub';
   bool _isConnected = false;
 
   Function(Message)? onMessageReceived;

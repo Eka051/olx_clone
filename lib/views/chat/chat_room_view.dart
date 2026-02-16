@@ -50,7 +50,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://olx-api-production.up.railway.app/api/products/${widget.chatRoom.productId}',
+          'https://olx-api.dianeka.web.id/api/products/${widget.chatRoom.productId}',
         ),
         headers: {'Content-Type': 'application/json'},
       );

@@ -7,7 +7,7 @@
 //   // For demo purposes, using a mock upload service
 //   // In production, replace with your preferred storage service (Firebase Storage, AWS S3, etc.)
 //   static const String _uploadEndpoint =
-//       'https://olx-api-production.up.railway.app/api/upload';
+//       'https://olx-api.dianeka.web.id/api/upload';
 
 //   /// Upload multiple images and return their URLs
 //   static Future<List<String>> uploadImages(List<File> images) async {

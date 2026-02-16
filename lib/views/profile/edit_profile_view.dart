@@ -525,7 +525,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://olx-api-production.up.railway.app/api/upload'),
+        Uri.parse('https://olx-api.dianeka.web.id/api/upload'),
       );
 
       request.files.add(

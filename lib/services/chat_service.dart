@@ -10,7 +10,7 @@ class ChatService {
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
   ChatService._internal();
-  final String baseUrl = "https://olx-api-production.up.railway.app";
+  final String baseUrl = "https://olx-api.dianeka.web.id";
 
   HubConnection? _hubConnection;
   bool get isConnected => _hubConnection?.state == HubConnectionState.Connected;
@@ -101,7 +101,7 @@ class ChatService {
   static Future<List<dynamic>> getChatRooms(String authToken) async {
     try {
       final response = await http.get(
-        Uri.parse('https://olx-api-production.up.railway.app/api/chatRooms'),
+        Uri.parse('https://olx-api.dianeka.web.id/api/chatRooms'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ class ChatService {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://olx-api-production.up.railway.app/api/chatRooms/$chatRoomId/messages',
+          'https://olx-api.dianeka.web.id/api/chatRooms/$chatRoomId/messages',
         ),
         headers: {
           'Authorization': 'Bearer $authToken',
@@ -156,7 +156,7 @@ class ChatService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('https://olx-api-production.up.railway.app/api/messages'),
+        Uri.parse('https://olx-api.dianeka.web.id/api/messages'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -173,6 +173,7 @@ class ChatService {
       return false;
     }
   }
+
   static Future<ChatRoom?> createChatRoom({
     required String productId,
     required String sellerId,
@@ -180,7 +181,7 @@ class ChatService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('https://olx-api-production.up.railway.app/api/chatRooms'),
+        Uri.parse('https://olx-api.dianeka.web.id/api/chatRooms'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -206,9 +207,7 @@ class ChatService {
   ) async {
     try {
       final response = await http.delete(
-        Uri.parse(
-          'https://olx-api-production.up.railway.app/api/chatRooms/$chatRoomId',
-        ),
+        Uri.parse('https://olx-api.dianeka.web.id/api/chatRooms/$chatRoomId'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',

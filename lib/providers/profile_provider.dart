@@ -11,8 +11,7 @@ class ProfileProvider extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
-  final String _baseUrl =
-      'https://olx-api-production.up.railway.app/api/users/me';
+  final String _baseUrl = 'https://olx-api.dianeka.web.id/api/users/me';
   final AuthProviderApp _authProvider;
   static const String _userKey = 'user_profile_data';
   bool _disposed = false;

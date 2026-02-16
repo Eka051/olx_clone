@@ -8,7 +8,7 @@ import 'package:olx_clone/services/google_geocoding_service.dart';
 import 'package:olx_clone/utils/const.dart';
 
 class HomeProvider extends ChangeNotifier {
-  final String _baseUrl = 'https://olx-api-production.up.railway.app';
+  final String _baseUrl = 'https://olx-api.dianeka.web.id';
 
   List<Product> _products = [];
   String _selectedLocation = 'Mendapatkan lokasi...';

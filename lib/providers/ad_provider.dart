@@ -8,7 +8,7 @@ import 'package:olx_clone/providers/auth_provider.dart';
 
 class AdProvider with ChangeNotifier {
   String? _token;
-  final String _baseUrl = 'https://olx-api-production.up.railway.app/api';
+  final String _baseUrl = 'https://olx-api.dianeka.web.id/api';
 
   List<AdPackage> _packages = [];
   List<CartItem> _cartItems = [];

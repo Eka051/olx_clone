@@ -10,7 +10,7 @@ import 'package:olx_clone/views/payment/payment_webview.dart';
 
 class CartProvider with ChangeNotifier {
   String? _token;
-  final String _baseUrl = 'https://olx-api-production.up.railway.app/api';
+  final String _baseUrl = 'https://olx-api.dianeka.web.id';
   List<CartItem> _cartItems = [];
   bool _isLoading = false;
   String? _errorMessage;
